@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoachIQ — Player Motivation Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0c10;
+    --surface: #13161d;
+    --surface2: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #f0f2f7;
+    --muted: #7a8099;
+    --accent: #e8ff47;
+    --accent-dim: rgba(232,255,71,0.1);
+    --red: #ff5252;
+    --teal: #2dd4a0;
+    --blue: #5b9cf6;
+    --orange: #ff9d4d;
+    --purple: #b794f4;
+
+    --c-competitor: #5b9cf6;
+    --c-relational: #2dd4a0;
+    --c-status: #ff9d4d;
+    --c-future: #b794f4;
+    --c-confidence: #ff7eb3;
+
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── NAV ── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 32px;
+    height: 60px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text); }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover, .nav-btn.active { color: var(--text); background: var(--surface2); }
+  .nav-btn.active { color: var(--accent); }
+  .add-btn {
+    background: var(--accent);
+    color: #0a0c10;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.05em;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .add-btn:hover { opacity: 0.88; }
+
+  /* ── PAGES ── */
+  .page { display: none; padding: 32px; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* ── ROSTER PAGE ── */
+  .page-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .page-sub { font-size: 14px; color: var(--muted); margin-top: 2px; }
+
+  .type-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .type-pill {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--border2);
+    background: none;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .type-pill:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+  .type-pill.active { color: #0a0c10; border-color: transparent; }
+
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+
+  .player-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .player-card:hover { border-color: var(--border2); background: var(--surface2); }
+
+  .card-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 15px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .card-name { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: 0.02em; }
+  .card-meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.04em; margin-right: 4px; margin-top: 4px;
+    font-family: var(--font-display);
+  }
+
+  .mini-bars { margin-top: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .mini-bar-row { display: flex; align-items: center; gap: 8px; }
+  .mini-bar-lbl { font-size: 11px; color: var(--muted); width: 90px; flex-shrink: 0; }
+  .mini-bar-track { flex: 1; background: rgba(255,255,255,0.06); border-radius: 3px; height: 4px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 3px; }
+
+  /* ── PLAYER DETAIL PAGE ── */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: none; border: 1px solid var(--border2); color: var(--muted);
+    font-family: var(--font-body); font-size: 13px; padding: 6px 14px;
+    border-radius: 6px; cursor: pointer; margin-bottom: 24px;
+    transition: all 0.15s;
+  }
+  .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+
+  .detail-header {
+    display: flex; align-items: center; gap: 20px; margin-bottom: 32px;
+  }
+  .detail-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 24px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .detail-name { font-family: var(--font-display); font-size: 36px; font-weight: 800; letter-spacing: 0.02em; }
+  .detail-meta { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .detail-badges { margin-top: 8px; }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .panel-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .score-bars { display: flex; flex-direction: column; gap: 10px; }
+  .score-row { display: flex; align-items: center; gap: 10px; }
+  .score-lbl { font-size: 13px; color: var(--text); width: 130px; flex-shrink: 0; }
+  .score-track { flex: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 8px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .score-val { font-size: 13px; font-weight: 500; color: var(--text); width: 20px; text-align: right; }
+
+  .coaching-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .coaching-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+  .coaching-item.danger { border-left: 3px solid var(--red); border-radius: 0 var(--radius) var(--radius) 0; }
+  .coaching-item.success { border-left: 3px solid var(--teal); border-radius: 0 var(--radius) var(--radius) 0; }
+  .ci-label { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; font-family: var(--font-display); }
+  .ci-text { font-size: 14px; color: var(--text); line-height: 1.55; }
+
+  .notes-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+  }
+  .notes-area textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); color: var(--text); font-family: var(--font-body);
+    font-size: 14px; padding: 12px; resize: vertical; min-height: 80px;
+    margin-top: 10px; line-height: 1.6;
+  }
+  .notes-area textarea::placeholder { color: var(--muted); }
+  .save-note-btn {
+    margin-top: 10px; background: var(--accent); color: #0a0c10;
+    font-family: var(--font-display); font-weight: 700; font-size: 13px;
+    letter-spacing: 0.05em; border: none; padding: 8px 18px;
+    border-radius: 6px; cursor: pointer; transition: opacity 0.15s;
+  }
+  .save-note-btn:hover { opacity: 0.85; }
+  .saved-notes { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .note-item {
+    background: var(--surface2); border-radius: var(--radius);
+    padding: 10px 14px; font-size: 13px; color: var(--text); line-height: 1.5;
+  }
+  .note-date { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+
+  /* ── FORM PAGE ── */
+  .form-wrap { max-width: 680px; }
+  .form-section { margin-bottom: 28px; }
+  .form-section-title {
+    font-family: var(--font-display); font-size: 16px; font-weight: 700;
+    letter-spacing: 0.05em; color: var(--muted); text-transform: uppercase;
+    margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 13px; color: var(--text); margin-bottom: 6px; display: block; font-weight: 500; }
+  .form-label span { color: var(--muted); font-weight: 400; font-size: 12px; }
+  .form-input, .form-select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); color: var(--text); font-family: var(--font-body);
+    font-size: 14px; padding: 10px 14px;
+  }
+  .form-select option { background: #1c2030; }
+
+  .radio-group { display: flex; flex-direction: column; gap: 6px; }
+  .radio-opt {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 14px; cursor: pointer;
+    transition: border-color 0.12s;
+    font-size: 14px;
+  }
+  .radio-opt:hover { border-color: var(--border2); }
+  .radio-opt input[type=radio] { accent-color: var(--accent); width: 16px; height: 16px; }
+  .radio-opt.selected { border-color: var(--accent); background: var(--accent-dim); }
+
+  .submit-btn {
+    background: var(--accent); color: #0a0c10;
+    font-family: var(--font-display); font-weight: 800; font-size: 17px;
+    letter-spacing: 0.06em; border: none; padding: 14px 36px;
+    border-radius: var(--radius); cursor: pointer; transition: opacity 0.15s;
+    width: 100%; margin-top: 8px;
+  }
+  .submit-btn:hover { opacity: 0.88; }
+
+  /* ── RADAR SVG ── */
+  .radar-wrap { display: flex; justify-content: center; }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--accent); color: #0a0c10; font-family: var(--font-display);
+    font-weight: 700; font-size: 15px; padding: 12px 28px; border-radius: 8px;
+    transition: transform 0.3s ease; z-index: 999; pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 640px) {
+    .page { padding: 20px 16px; }
+    .detail-grid, .coaching-panels { grid-template-columns: 1fr; }
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">COACH<span>IQ</span></div>
+  <div class="nav-links">
+    <button class="nav-btn active" onclick="showPage('roster')">Roster</button>
+    <button class="nav-btn" onclick="showPage('add')">Add Player</button>
+  </div>
+  <button class="add-btn" onclick="showPage('add')">+ Add Player</button>
+</nav>
+
+<!-- ROSTER PAGE -->
+<div class="page active" id="page-roster">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Player Roster</div>
+      <div class="page-sub" id="roster-sub">Loading...</div>
+    </div>
+  </div>
+  <div class="type-filters" id="type-filters"></div>
+  <div class="roster-grid" id="roster-grid"></div>
+</div>
+
+<!-- PLAYER DETAIL PAGE -->
+<div class="page" id="page-detail">
+  <button class="back-btn" onclick="showPage('roster')">&#8592; Back to roster</button>
+  <div class="detail-header">
+    <div class="detail-avatar" id="d-avatar"></div>
+    <div>
+      <div class="detail-name" id="d-name"></div>
+      <div class="detail-meta" id="d-meta"></div>
+      <div class="detail-badges" id="d-badges"></div>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="panel">
+      <div class="panel-title">Motivation scores</div>
+      <div class="score-bars" id="d-bars"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Profile radar</div>
+      <div class="radar-wrap">
+        <svg id="d-radar" viewBox="0 0 220 220" width="200" height="200"></svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="coaching-panels">
+    <div class="coaching-item">
+      <div class="ci-label">What drives them</div>
+      <div class="ci-text" id="d-drives"></div>
+    </div>
+    <div class="coaching-item success">
+      <div class="ci-label">Best coaching approach</div>
+      <div class="ci-text" id="d-approach"></div>
+    </div>
+    <div class="coaching-item danger">
+      <div class="ci-label">What to avoid</div>
+      <div class="ci-text" id="d-avoid"></div>
+    </div>
+    <div class="coaching-item success">
+      <div class="ci-label">Accountability strategy</div>
+      <div class="ci-text" id="d-accountability"></div>
+    </div>
+  </div>
+
+  <div class="notes-area">
+    <div class="panel-title">Coach notes</div>
+    <textarea id="note-input" placeholder="Add an observation, game note, or coaching cue..."></textarea>
+    <button class="save-note-btn" onclick="saveNote()">Save note</button>
+    <div class="saved-notes" id="saved-notes"></div>
+  </div>
+</div>
+
+<!-- ADD PLAYER PAGE -->
+<div class="page" id="page-add">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Add Player</div>
+      <div class="page-sub">Complete the 20-question motivation assessment</div>
+    </div>
+  </div>
+  <div class="form-wrap" id="assessment-form"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const TYPES = ['Competitor','Relational','Status-Driven','Future-Driven','Confidence-Based'];
+const TYPE_COLORS = {
+  'Competitor': '#5b9cf6',
+  'Relational': '#2dd4a0',
+  'Status-Driven': '#ff9d4d',
+  'Future-Driven': '#b794f4',
+  'Confidence-Based': '#ff7eb3'
+};
+const TYPE_BG = {
+  'Competitor': 'rgba(91,156,246,0.15)',
+  'Relational': 'rgba(45,212,160,0.15)',
+  'Status-Driven': 'rgba(255,157,77,0.15)',
+  'Future-Driven': 'rgba(183,148,244,0.15)',
+  'Confidence-Based': 'rgba(255,126,179,0.15)'
+};
+const AVATAR_COLORS = ['#5b9cf6','#2dd4a0','#ff9d4d','#b794f4','#ff7eb3','#e8ff47'];
+
+const SCORING = {
+  Q2:  { 'Winning games':[2,0,0,0,0], 'Playing time':[1,0,2,1,0], 'Getting better':[1,0,0,2,1], 'Recognition':[0,0,2,1,0], 'Having fun':[0,1,0,0,1] },
+  Q5:  { 'Winning':[2,0,0,0,0], 'Recognition/praise':[0,0,2,0,0], 'Not letting teammates down':[0,2,0,0,0], 'Competition':[2,0,0,0,0], 'Proving people wrong':[1,0,1,1,0] },
+  Q7:  { 'During competition':[2,0,0,0,0], 'When coach challenges me':[2,0,1,0,0], 'When I\'m confident':[0,0,0,0,2], 'When teammates depend on me':[0,2,0,0,0] },
+  Q8:  { 'Boredom':[1,0,0,0,0], 'Confusion':[0,0,0,0,2], 'Getting corrected':[0,0,0,0,2], 'Losing reps':[1,0,1,0,0] },
+  Q9:  { 'Being pushed hard':[2,0,0,0,0], 'Encouragement':[0,1,0,0,1], 'Clear instruction':[0,0,0,0,2], 'One-on-one conversation':[0,1,0,0,1] },
+  Q10: { 'Direct and loud':[2,0,0,0,0], 'Direct and calm':[1,0,0,0,1], 'Private conversation':[0,1,0,0,2], 'Film explanation':[0,0,0,1,1] },
+  Q11: { 'Being called out publicly':[0,0,0,0,2], 'Not knowing what to do':[0,0,0,0,2], 'Feeling overlooked':[0,0,2,0,0], 'Too much talking':[1,0,0,0,0] },
+  Q12: { 'Getting another rep':[2,0,0,0,0], 'Encouragement':[0,1,0,0,1], 'Being corrected immediately':[1,0,0,0,1], 'Time to reset':[0,0,0,0,2] },
+  Q15: { 'Respect':[0,1,1,0,0], 'Trust':[0,2,0,0,0], 'Friendship':[0,2,0,0,1], 'Competition':[2,0,0,0,0] },
+  Q16: { 'Yes':[0,2,0,0,0], 'Sometimes':[0,1,0,0,0], 'Not really':[1,0,0,0,0] },
+  Q17: { 'Very confident':[1,0,1,0,0], 'Somewhat':[0,0,0,0,1], 'Not confident':[0,0,0,0,2] },
+  Q18: { 'Mistakes':[0,0,0,0,1], 'Coaches\' reactions':[0,0,0,0,2], 'Teammates\' reactions':[0,1,1,0,1], 'Losing':[1,0,0,0,0] },
+  Q19: { 'Play better':[2,0,1,0,0], 'Stay the same':[0,0,0,1,1], 'Struggle':[0,0,0,0,2] },
+  Q20: { 'Fear of failing':[0,0,0,0,2], 'Desire to succeed':[1,0,1,2,0] }
+};
+
+const COACHING_TEXT = {
+  'Competitor': {
+    drives: 'Winning, competing, being tested, and proving they can beat others.',
+    approach: 'Challenge directly. Use competition drills, keep score, and make winning visible.',
+    avoid: 'Long passive coaching, boredom, and unclear competitive standards.',
+    accountability: 'Tie effort to standards, competition, and earning reps.'
+  },
+  'Relational': {
+    drives: 'Team connection, trust, loyalty, and not letting teammates down.',
+    approach: 'Coach through trust and responsibility to teammates. Build connection first.',
+    avoid: 'Isolation, disrespect, or any coaching approach that damages team trust.',
+    accountability: 'Tie effort to brotherhood, responsibility, and team standards.'
+  },
+  'Status-Driven': {
+    drives: 'Recognition, respect, praise, and being seen as valuable by coaches and peers.',
+    approach: 'Recognize effort publicly. Reward consistency and make improvement visible.',
+    avoid: 'Ignoring effort, overlooking improvement, and giving vague or absent feedback.',
+    accountability: 'Tie effort to visibility, leadership opportunities, and earned recognition.'
+  },
+  'Future-Driven': {
+    drives: 'Long-term goals, improvement, and investing in their future beyond this season.',
+    approach: 'Connect daily work to long-term outcomes. Show how today\'s rep builds tomorrow.',
+    avoid: 'Short-term thinking. Never make them feel like the season is the only thing that matters.',
+    accountability: 'Tie effort to their personal growth plan and next-level aspirations.'
+  },
+  'Confidence-Based': {
+    drives: 'Clarity, confidence, encouragement, and small wins that build self-belief.',
+    approach: 'Give clear instruction. Build confidence intentionally. Correct without crushing.',
+    avoid: 'Public embarrassment, confusion, and constant negative correction without positives.',
+    accountability: 'Tie effort to confidence-building habits, ownership, and clear expectations.'
+  }
+};
+
+const QUESTIONS = [
+  { id:'name', label:'Player name', type:'text', section:'Player info' },
+  { id:'pos', label:'Position', type:'select', opts:['QB','RB','WR','TE','OL','DL','LB','CB','S','K/P'], section:null },
+  { id:'grade', label:'Grade (in fall 2026)', type:'select', opts:['9','10','11','12'], section:null },
+  { id:'Q2', label:'What matters most to you this season?', type:'radio', section:'Motivation', opts:['Winning games','Playing time','Getting better','Recognition','Having fun'] },
+  { id:'Q5', label:'What motivates you the MOST?', type:'radio', section:null, opts:['Winning','Recognition/praise','Not letting teammates down','Competition','Proving people wrong'] },
+  { id:'Q7', label:'When do you feel most locked in?', type:'radio', section:null, opts:['During competition','When coach challenges me','When I\'m confident','When teammates depend on me'] },
+  { id:'Q8', label:'What makes you lose focus the most?', type:'radio', section:null, opts:['Boredom','Confusion','Getting corrected','Losing reps'] },
+  { id:'Q9', label:'How do you respond best to coaching?', type:'radio', section:'Coaching style', opts:['Being pushed hard','Encouragement','Clear instruction','One-on-one conversation'] },
+  { id:'Q10', label:'What type of correction helps you improve most?', type:'radio', section:null, opts:['Direct and loud','Direct and calm','Private conversation','Film explanation'] },
+  { id:'Q11', label:'What frustrates you most from coaches?', type:'radio', section:null, opts:['Being called out publicly','Not knowing what to do','Feeling overlooked','Too much talking'] },
+  { id:'Q12', label:'After you mess up, what helps you recover fastest?', type:'radio', section:null, opts:['Getting another rep','Encouragement','Being corrected immediately','Time to reset'] },
+  { id:'Q15', label:'What matters most to you about your teammates?', type:'radio', section:'Team & accountability', opts:['Respect','Trust','Friendship','Competition'] },
+  { id:'Q16', label:'Do you feel like your teammates depend on you?', type:'radio', section:null, opts:['Yes','Sometimes','Not really'] },
+  { id:'Q17', label:'How confident are you in your ability right now?', type:'radio', section:'Confidence', opts:['Very confident','Somewhat','Not confident'] },
+  { id:'Q18', label:'What hurts your confidence the most?', type:'radio', section:null, opts:['Mistakes','Coaches\' reactions','Teammates\' reactions','Losing'] },
+  { id:'Q19', label:'When pressure increases, you:', type:'radio', section:null, opts:['Play better','Stay the same','Struggle'] },
+  { id:'Q20', label:'What drives you more?', type:'radio', section:null, opts:['Fear of failing','Desire to succeed'] }
+];
+
+let players = JSON.parse(localStorage.getItem('coachiq_players') || '[]');
+if (!players.length) {
+  players = [
+    { id:1, name:'Tre Sherrell', pos:'DL', grade:10, scores:{Competitor:11,Relational:7,'Status-Driven':3,'Future-Driven':2,'Confidence-Based':5}, notes:[] },
+    { id:2, name:'Jeffery Davis', pos:'OL', grade:11, scores:{Competitor:9,Relational:8,'Status-Driven':1,'Future-Driven':3,'Confidence-Based':4}, notes:[] },
+    { id:3, name:'Jace Orbison', pos:'OL', grade:11, scores:{Competitor:6,Relational:9,'Status-Driven':3,'Future-Driven':3,'Confidence-Based':5}, notes:[] },
+    { id:4, name:'Aeden Taylor', pos:'OL', grade:10, scores:{Competitor:8,Relational:6,'Status-Driven':0,'Future-Driven':3,'Confidence-Based':10}, notes:[] },
+    { id:5, name:'Knox Henfling', pos:'OL', grade:10, scores:{Competitor:13,Relational:2,'Status-Driven':5,'Future-Driven':1,'Confidence-Based':6}, notes:[] },
+    { id:6, name:'Jaylen Walker', pos:'OL', grade:12, scores:{Competitor:8,Relational:10,'Status-Driven':1,'Future-Driven':1,'Confidence-Based':9}, notes:[] },
+    { id:7, name:'Rouse Cude', pos:'OL', grade:11, scores:{Competitor:9,Relational:6,'Status-Driven':8,'Future-Driven':1,'Confidence-Based':6}, notes:[] },
+    { id:8, name:'Braylen Wilson', pos:'OL', grade:12, scores:{Competitor:6,Relational:3,'Status-Driven':7,'Future-Driven':3,'Confidence-Based':6}, notes:[] }
+  ];
+  localStorage.setItem('coachiq_players', JSON.stringify(players));
+}
+
+let currentFilter = 'All';
+let currentPlayer = null;
+
+function getPrimary(scores) { return TYPES.reduce((a,b) => scores[a]>=scores[b]?a:b); }
+function getSecondary(scores) {
+  const sorted = [...TYPES].sort((a,b) => scores[b]-scores[a]);
+  return sorted[1];
+}
+function initials(name) { return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function avatarColor(name) { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]; }
+
+function badge(type, size='normal') {
+  const fs = size==='sm' ? '10px' : '12px';
+  const pad = size==='sm' ? '2px 8px' : '3px 12px';
+  return `<span style="display:inline-flex;align-items:center;padding:${pad};border-radius:20px;font-size:${fs};font-weight:700;letter-spacing:0.04em;font-family:'Barlow Condensed',sans-serif;background:${TYPE_BG[type]};color:${TYPE_COLORS[type]};">${type}</span>`;
+}
+
+function renderRoster() {
+  const fil = document.getElementById('type-filters');
+  const grid = document.getElementById('roster-grid');
+  const sub = document.getElementById('roster-sub');
+
+  fil.innerHTML = ['All',...TYPES].map(t => {
+    const active = currentFilter===t ? ' active' : '';
+    const style = t!=='All' ? `style="background:${currentFilter===t?TYPE_COLORS[t]:'none'};color:${currentFilter===t?'#0a0c10':''};border-color:${currentFilter===t?TYPE_COLORS[t]:'rgba(255,255,255,0.13)'};"` : (currentFilter==='All'?`style="background:#e8ff47;color:#0a0c10;border-color:#e8ff47;"`:'');
+    return `<button class="type-pill${active}" ${style} onclick="setFilter('${t}')">${t}</button>`;
+  }).join('');
+
+  const filtered = currentFilter==='All' ? players : players.filter(p => getPrimary(p.scores)===currentFilter);
+  sub.textContent = `${filtered.length} player${filtered.length!==1?'s':''} · ${currentFilter==='All'?'All types':currentFilter}`;
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="empty-title">No players yet</div><p>Add your first player using the button above.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(p => {
+    const prim = getPrimary(p.scores);
+    const sec = getSecondary(p.scores);
+    const max = 16;
+    const bars = TYPES.map(t => `
+      <div class="mini-bar-row">
+        <span class="mini-bar-lbl">${t.split('-')[0]}</span>
+        <div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.round(p.scores[t]/max*100)}%;background:${TYPE_COLORS[t]};"></div></div>
+      </div>`).join('');
+
+    return `<div class="player-card" onclick="showDetail(${p.id})">
+      <div class="card-top">
+        <div class="avatar" style="background:${avatarColor(p.name)}22;color:${avatarColor(p.name)}">${initials(p.name)}</div>
+        <div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-meta">${p.pos} &middot; Grade ${p.grade}</div>
+          <div style="margin-top:6px;">${badge(prim,'sm')} ${badge(sec,'sm')}</div>
+        </div>
+      </div>
+      <div class="mini-bars">${bars}</div>
+    </div>`;
+  }).join('');
+}
+
+function setFilter(f) { currentFilter = f; renderRoster(); }
+
+function showDetail(id) {
+  currentPlayer = players.find(p => p.id===id);
+  const p = currentPlayer;
+  const prim = getPrimary(p.scores);
+  const sec = getSecondary(p.scores);
+  const ac = avatarColor(p.name);
+
+  document.getElementById('d-avatar').textContent = initials(p.name);
+  document.getElementById('d-avatar').style.cssText = `width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;flex-shrink:0;background:${ac}22;color:${ac}`;
+  document.getElementById('d-name').textContent = p.name;
+  document.getElementById('d-meta').textContent = `${p.pos} · Grade ${p.grade}`;
+  document.getElementById('d-badges').innerHTML = badge(prim) + ' ' + badge(sec);
+
+  const max = 16;
+  document.getElementById('d-bars').innerHTML = TYPES.map(t => `
+    <div class="score-row">
+      <span class="score-lbl">${t}</span>
+      <div class="score-track"><div class="score-fill" style="width:${Math.round(p.scores[t]/max*100)}%;background:${TYPE_COLORS[t]};"></div></div>
+      <span class="score-val">${p.scores[t]}</span>
+    </div>`).join('');
+
+  drawRadar(p.scores);
+
+  const ct = COACHING_TEXT[prim];
+  document.getElementById('d-drives').textContent = ct.drives;
+  document.getElementById('d-approach').textContent = ct.approach;
+  document.getElementById('d-avoid').textContent = ct.avoid;
+  document.getElementById('d-accountability').textContent = ct.accountability;
+
+  document.getElementById('note-input').value = '';
+  renderNotes();
+  showPage('detail');
+}
+
+function renderNotes() {
+  const p = currentPlayer;
+  const cont = document.getElementById('saved-notes');
+  if (!p.notes || !p.notes.length) { cont.innerHTML = ''; return; }
+  cont.innerHTML = [...p.notes].reverse().map(n => `
+    <div class="note-item">
+      <div class="note-date">${n.date}</div>
+      ${n.text}
+    </div>`).join('');
+}
+
+function saveNote() {
+  const val = document.getElementById('note-input').value.trim();
+  if (!val) return;
+  if (!currentPlayer.notes) currentPlayer.notes = [];
+  currentPlayer.notes.push({ text: val, date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) });
+  const idx = players.findIndex(p => p.id===currentPlayer.id);
+  players[idx] = currentPlayer;
+  localStorage.setItem('coachiq_players', JSON.stringify(players));
+  document.getElementById('note-input').value = '';
+  renderNotes();
+  showToast('Note saved');
+}
+
+function drawRadar(scores) {
+  const svg = document.getElementById('d-radar');
+  svg.innerHTML = '';
+  const cx=110, cy=115, r=80;
+  const n=TYPES.length;
+  const angles = TYPES.map((_,i) => (i/n)*2*Math.PI - Math.PI/2);
+  const gridC = 'rgba(255,255,255,0.08)';
+
+  [0.25,0.5,0.75,1].forEach(frac => {
+    const pts = angles.map(a=>`${cx+r*frac*Math.cos(a)},${cy+r*frac*Math.sin(a)}`).join(' ');
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',pts); poly.setAttribute('fill','none');
+    poly.setAttribute('stroke',gridC); poly.setAttribute('stroke-width','1');
+    svg.appendChild(poly);
+  });
+  angles.forEach(a => {
+    const l=document.createElementNS('http://www.w3.org/2000/svg','line');
+    l.setAttribute('x1',cx);l.setAttribute('y1',cy);
+    l.setAttribute('x2',cx+r*Math.cos(a));l.setAttribute('y2',cy+r*Math.sin(a));
+    l.setAttribute('stroke',gridC);l.setAttribute('stroke-width','1');
+    svg.appendChild(l);
+  });
+
+  const max=16;
+  const dataPts = angles.map((a,i) => {
+    const frac=scores[TYPES[i]]/max;
+    return `${cx+r*frac*Math.cos(a)},${cy+r*frac*Math.sin(a)}`;
+  }).join(' ');
+  const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  poly.setAttribute('points',dataPts);
+  poly.setAttribute('fill','rgba(232,255,71,0.12)');
+  poly.setAttribute('stroke','#e8ff47');
+  poly.setAttribute('stroke-width','2');
+  svg.appendChild(poly);
+
+  angles.forEach((a,i) => {
+    const frac=scores[TYPES[i]]/max;
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',cx+r*frac*Math.cos(a));
+    dot.setAttribute('cy',cy+r*frac*Math.sin(a));
+    dot.setAttribute('r','4'); dot.setAttribute('fill',TYPE_COLORS[TYPES[i]]);
+    svg.appendChild(dot);
+
+    const lx=cx+(r+18)*Math.cos(a);
+    const ly=cy+(r+18)*Math.sin(a);
+    const short=TYPES[i].split('-')[0];
+    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',lx); txt.setAttribute('y',ly+4);
+    txt.setAttribute('text-anchor',Math.cos(a)<-0.1?'end':Math.cos(a)>0.1?'start':'middle');
+    txt.setAttribute('font-size','11');
+    txt.setAttribute('fill','#7a8099');
+    txt.setAttribute('font-family','Barlow, sans-serif');
+    txt.textContent=short;
+    svg.appendChild(txt);
+  });
+}
+
+function buildForm() {
+  const wrap = document.getElementById('assessment-form');
+  let html = '';
+  let lastSection = null;
+
+  QUESTIONS.forEach(q => {
+    if (q.section && q.section !== lastSection) {
+      html += `<div class="form-section-title">${q.section}</div>`;
+      lastSection = q.section;
+    }
+    html += `<div class="form-group">`;
+    html += `<label class="form-label">${q.label}</label>`;
+    if (q.type==='text') {
+      html += `<input class="form-input" type="text" id="q_${q.id}" placeholder="Full name">`;
+    } else if (q.type==='select') {
+      html += `<select class="form-select" id="q_${q.id}"><option value="">Select...</option>${(q.opts||[]).map(o=>`<option>${o}</option>`).join('')}</select>`;
+    } else if (q.type==='radio') {
+      html += `<div class="radio-group">${(q.opts||[]).map(o=>`
+        <label class="radio-opt" onclick="selectRadio('${q.id}','${o.replace(/'/g,"\\'")}',this)">
+          <input type="radio" name="${q.id}" value="${o}"> ${o}
+        </label>`).join('')}</div>`;
+    }
+    html += `</div>`;
+  });
+
+  html += `<button class="submit-btn" onclick="submitForm()">Generate Player Profile</button>`;
+  wrap.innerHTML = html;
+}
+
+function selectRadio(qid, val, el) {
+  document.querySelectorAll(`.radio-opt input[name="${qid}"]`).forEach(r => {
+    r.closest('.radio-opt').classList.remove('selected');
+  });
+  el.classList.add('selected');
+}
+
+function submitForm() {
+  const name = document.getElementById('q_name').value.trim();
+  const pos = document.getElementById('q_pos').value;
+  const grade = document.getElementById('q_grade').value;
+  if (!name || !pos || !grade) { showToast('Please fill in player info'); return; }
+
+  const scores = { Competitor:0, Relational:0, 'Status-Driven':0, 'Future-Driven':0, 'Confidence-Based':0 };
+  let answered = 0;
+  QUESTIONS.filter(q=>q.type==='radio').forEach(q => {
+    const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+    if (checked && SCORING[q.id] && SCORING[q.id][checked.value]) {
+      const pts = SCORING[q.id][checked.value];
+      TYPES.forEach((t,i) => scores[t] += pts[i]);
+      answered++;
+    }
+  });
+
+  const newPlayer = { id: Date.now(), name, pos, grade: parseInt(grade), scores, notes:[] };
+  players.push(newPlayer);
+  localStorage.setItem('coachiq_players', JSON.stringify(players));
+  buildForm();
+  showToast(`${name} added to roster`);
+  setTimeout(() => showDetail(newPlayer.id), 600);
+}
+
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  if (page==='roster') { renderRoster(); document.querySelector('.nav-btn').classList.add('active'); }
+  if (page==='add') { document.querySelectorAll('.nav-btn')[1].classList.add('active'); }
+  window.scrollTo(0,0);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+buildForm();
+renderRoster();
+</script>
+</body>
+</html>
