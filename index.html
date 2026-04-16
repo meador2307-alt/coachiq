@@ -1,1 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoachIQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0c10;--surface:#13161d;--surface2:#1c2030;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f2f7;--muted:#7a8099;--accent:#e8ff47;--accent-dim:rgba(232,255,71,0.1);
+  --red:#ff5252;--teal:#2dd4a0;--orange:#ff9d4d;--blue:#5b9cf6;--purple:#b794f4;
+  --font-display:'Barlow Condensed',sans-serif;--font-body:'Barlow',sans-serif;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.6;}
+nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:100;}
+.logo{font-family:var(--font-display);font-size:22px;font-weight:800;letter-spacing:0.04em;color:var(--accent);}
+.logo span{color:var(--text);}
+.nav-links{display:flex;gap:4px;}
+.nav-btn{background:none;border:none;color:var(--muted);font-family:var(--font-body);font-size:14px;padding:6px 14px;border-radius:6px;cursor:pointer;}
+.nav-btn.active{color:var(--accent);}
+.add-btn{background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:700;font-size:14px;border:none;padding:8px 18px;border-radius:6px;cursor:pointer;}
+.logout-btn{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font-body);font-size:13px;padding:6px 14px;border-radius:6px;cursor:pointer;}
+.page{display:none;padding:32px;max-width:1100px;margin:0 auto;}
+.page.active{display:block;}
+.page-title{font-family:var(--font-display);font-size:32px;font-weight:700;}
+.page-sub{font-size:14px;color:var(--muted);margin-top:2px;margin-bottom:24px;}
 
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;width:100%;max-width:400px;}
+.auth-logo{font-family:var(--font-display);font-size:28px;font-weight:800;color:var(--accent);margin-bottom:4px;}
+.auth-logo span{color:var(--text);}
+.auth-sub{font-size:14px;color:var(--muted);margin-bottom:32px;}
+.auth-tabs{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid var(--border);}
+.auth-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font-body);font-size:14px;padding:8px 16px;cursor:pointer;margin-bottom:-1px;}
+.auth-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.auth-field{margin-bottom:16px;}
+.auth-field label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px;font-weight:500;}
+.auth-field input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:15px;padding:12px 16px;}
+.auth-btn{width:100%;background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:800;font-size:17px;letter-spacing:0.05em;border:none;padding:13px;border-radius:var(--radius);cursor:pointer;margin-top:8px;}
+.auth-error{font-size:13px;margin-top:10px;text-align:center;min-height:20px;}
+.forgot-link{text-align:right;margin-top:-8px;margin-bottom:16px;}
+.forgot-link a{font-size:12px;color:var(--muted);cursor:pointer;}
+
+/* ROSTER */
+.alert-banner{background:rgba(255,82,82,0.08);border:1px solid rgba(255,82,82,0.25);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:24px;display:none;}
+.alert-banner.visible{display:block;}
+.alert-banner-title{font-family:var(--font-display);font-size:14px;font-weight:700;color:var(--red);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.alert-dot{width:8px;height:8px;border-radius:50%;background:var(--red);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.alert-players{display:flex;flex-wrap:wrap;gap:8px;}
+.alert-chip{background:rgba(255,82,82,0.12);border:1px solid rgba(255,82,82,0.2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;color:var(--red);cursor:pointer;font-family:var(--font-display);}
+.type-filters{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;}
+.type-pill{padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;}
+.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.player-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;cursor:pointer;transition:all 0.15s;}
+.player-card:hover{border-color:var(--border2);background:var(--surface2);}
+.player-card.alert-card{border-color:rgba(255,82,82,0.35);background:rgba(255,82,82,0.03);}
+.card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:15px;font-weight:700;flex-shrink:0;}
+.card-name{font-family:var(--font-display);font-size:18px;font-weight:700;}
+.card-meta{font-size:12px;color:var(--muted);margin-top:1px;}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:4px;margin-top:4px;font-family:var(--font-display);}
+.mini-bars{display:flex;flex-direction:column;gap:5px;margin-top:12px;}
+.mini-bar-row{display:flex;align-items:center;gap:8px;}
+.mini-bar-lbl{font-size:11px;color:var(--muted);width:90px;flex-shrink:0;}
+.mini-bar-track{flex:1;background:rgba(255,255,255,0.06);border-radius:3px;height:4px;overflow:hidden;}
+.mini-bar-fill{height:100%;border-radius:3px;}
+.checkin-scores{display:flex;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.checkin-score{flex:1;text-align:center;}
+.cs-label{font-size:10px;color:var(--muted);display:block;margin-bottom:2px;}
+.cs-value{font-size:16px;font-weight:700;font-family:var(--font-display);}
+.cs-low{color:var(--red);}
+.cs-mid{color:var(--orange);}
+.cs-high{color:var(--teal);}
+
+/* DETAIL */
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font-body);font-size:13px;padding:6px 14px;border-radius:6px;cursor:pointer;margin-bottom:24px;}
+.detail-header{display:flex;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap;}
+.detail-name{font-family:var(--font-display);font-size:36px;font-weight:800;}
+.detail-meta{font-size:14px;color:var(--muted);margin-top:4px;}
+.tab-row{display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);overflow-x:auto;}
+.tab-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);font-family:var(--font-body);font-size:14px;padding:10px 16px;cursor:pointer;margin-bottom:-1px;white-space:nowrap;}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;}
+.panel-title{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:16px;}
+.score-bars{display:flex;flex-direction:column;gap:10px;}
+.score-row{display:flex;align-items:center;gap:10px;}
+.score-lbl{font-size:13px;color:var(--text);width:130px;flex-shrink:0;}
+.score-track{flex:1;background:rgba(255,255,255,0.06);border-radius:4px;height:8px;overflow:hidden;}
+.score-fill{height:100%;border-radius:4px;}
+.score-val{font-size:13px;font-weight:500;color:var(--text);width:20px;text-align:right;}
+.coaching-panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.coaching-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.coaching-item.danger{border-left:3px solid var(--red);border-radius:0 var(--radius) var(--radius) 0;}
+.coaching-item.success{border-left:3px solid var(--teal);border-radius:0 var(--radius) var(--radius) 0;}
+.ci-label{font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;font-family:var(--font-display);}
+.ci-text{font-size:14px;color:var(--text);line-height:1.55;}
+.delete-btn{background:rgba(255,82,82,0.1);border:1px solid rgba(255,82,82,0.3);color:var(--red);font-family:var(--font-body);font-size:13px;padding:6px 14px;border-radius:6px;cursor:pointer;}
+
+/* TODAY'S COACHING CALL — THE MAIN FEATURE */
+.coaching-call-card{background:var(--surface);border:2px solid rgba(232,255,71,0.3);border-radius:var(--radius-lg);padding:24px;margin-bottom:24px;position:relative;overflow:hidden;}
+.coaching-call-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),rgba(232,255,71,0.3));}
+.coaching-call-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.coaching-call-title{font-family:var(--font-display);font-size:16px;font-weight:800;letter-spacing:0.08em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
+.gen-btn{background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:800;font-size:14px;letter-spacing:0.05em;border:none;padding:9px 20px;border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.gen-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.coaching-call-empty{font-size:14px;color:var(--muted);font-style:italic;text-align:center;padding:20px 0;}
+
+/* CALL RESULT GRID */
+.call-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.call-cell{background:var(--surface2);border-radius:var(--radius);padding:14px 16px;}
+.call-cell.say-this{grid-column:1/-1;background:rgba(232,255,71,0.06);border:1px solid rgba(232,255,71,0.2);}
+.call-cell-label{font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:6px;}
+.call-cell.say-this .call-cell-label{color:var(--accent);}
+.call-cell-text{font-size:14px;color:var(--text);line-height:1.55;}
+.call-cell.say-this .call-cell-text{font-size:17px;font-weight:500;color:var(--accent);font-style:italic;line-height:1.4;}
+.call-cell.avoid .call-cell-label{color:var(--red);}
+.call-cell.avoid{border-left:2px solid var(--red);}
+.call-move-badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;font-family:var(--font-display);letter-spacing:0.04em;background:rgba(91,156,246,0.15);color:var(--blue);margin-bottom:10px;}
+.call-tone-badge{display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;font-family:var(--font-display);background:rgba(45,212,160,0.12);color:var(--teal);}
+.situation-tags{display:flex;flex-wrap:wrap;gap:8px;}
+.sit-tag{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;transition:all 0.12s;font-family:var(--font-display);letter-spacing:0.03em;}
+.sit-tag:hover{border-color:rgba(255,255,255,0.25);color:var(--text);}
+.sit-tag.selected{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.coaching-message-box{background:rgba(232,255,71,0.06);border:1px solid rgba(232,255,71,0.25);border-radius:var(--radius-lg);padding:24px;text-align:center;}
+.coaching-message-text{font-size:20px;font-weight:500;color:var(--text);line-height:1.5;font-style:italic;}
+.coaching-message-source{font-size:11px;color:var(--muted);margin-top:12px;font-family:var(--font-display);letter-spacing:0.06em;text-transform:uppercase;}
+
+/* CHECK-IN FORM */
+.checkin-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px;}
+.checkin-form-title{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text);margin-bottom:20px;}
+.slider-group{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+.slider-field{display:flex;flex-direction:column;gap:6px;}
+.slider-field label{font-size:12px;color:var(--muted);font-weight:500;display:flex;justify-content:space-between;}
+.slider-field label span{color:var(--accent);font-weight:700;}
+.slider-field input[type=range]{width:100%;accent-color:var(--accent);}
+.one-word-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:14px;padding:10px 14px;margin-bottom:12px;}
+.one-word-input::placeholder{color:var(--muted);}
+.checkin-submit-btn{background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:700;font-size:15px;border:none;padding:11px 28px;border-radius:var(--radius);cursor:pointer;}
+
+/* PRACTICE LOG */
+.log-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;}
+.log-form-title{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;}
+.log-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.log-field label{font-size:12px;color:var(--muted);display:block;margin-bottom:5px;font-weight:500;}
+.log-field select,.log-field input,.log-field textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:14px;padding:9px 12px;}
+.log-field select option{background:#1c2030;}
+.log-field textarea{resize:vertical;min-height:60px;line-height:1.5;}
+.log-field textarea::placeholder{color:var(--muted);}
+.worked-toggle{display:flex;gap:8px;}
+.worked-btn{flex:1;padding:10px;border-radius:var(--radius);border:1px solid var(--border2);background:none;color:var(--muted);font-family:var(--font-display);font-size:14px;font-weight:600;cursor:pointer;transition:all 0.12s;}
+.worked-btn.yes.selected{background:rgba(45,212,160,0.12);border-color:var(--teal);color:var(--teal);}
+.worked-btn.no.selected{background:rgba(255,82,82,0.12);border-color:var(--red);color:var(--red);}
+.log-submit-btn{background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:700;font-size:14px;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;}
+.log-entries{display:flex;flex-direction:column;gap:12px;}
+.log-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;}
+.log-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.log-date-text{font-size:12px;color:var(--muted);}
+.log-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.log-tag{padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--font-display);}
+.log-tag.method{background:rgba(91,156,246,0.12);color:var(--blue);}
+.log-tag.worked{background:rgba(45,212,160,0.12);color:var(--teal);}
+.log-tag.didnt{background:rgba(255,82,82,0.12);color:var(--red);}
+.log-notes-text{font-size:13px;color:var(--text);line-height:1.5;}
+.log-empty{text-align:center;padding:32px;color:var(--muted);font-size:14px;}
+
+/* CHECKIN HISTORY */
+.checkin-history{display:flex;flex-direction:column;gap:12px;}
+.checkin-entry{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;}
+.checkin-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.checkin-mini-scores{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.cms-item{text-align:center;background:var(--surface2);border-radius:var(--radius);padding:8px;}
+.cms-label{font-size:10px;color:var(--muted);display:block;margin-bottom:2px;}
+.cms-val{font-size:18px;font-weight:700;font-family:var(--font-display);}
+.one-word-tag{display:inline-flex;align-items:center;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:var(--font-display);background:var(--surface2);color:var(--muted);margin-top:8px;}
+
+/* AI PANEL */
+.ai-panel{background:var(--surface);border:1px solid rgba(232,255,71,0.15);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;}
+.ai-panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.ai-panel-title{font-family:var(--font-display);font-size:14px;font-weight:700;letter-spacing:0.06em;color:var(--accent);text-transform:uppercase;display:flex;align-items:center;gap:8px;}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.ai-analyze-btn{background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:700;font-size:13px;border:none;padding:7px 16px;border-radius:6px;cursor:pointer;}
+.ai-analyze-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.ai-empty{font-size:13px;color:var(--muted);font-style:italic;}
+.ai-content{font-size:14px;color:var(--text);line-height:1.65;}
+.ai-section{margin-bottom:14px;}
+.ai-section-label{font-size:11px;font-weight:600;letter-spacing:0.06em;color:var(--muted);text-transform:uppercase;margin-bottom:5px;font-family:var(--font-display);}
+.drift-indicator{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;font-family:var(--font-display);}
+.drift-none{background:rgba(45,212,160,0.12);color:var(--teal);}
+.drift-low{background:rgba(255,157,77,0.12);color:var(--orange);}
+.drift-high{background:rgba(232,255,71,0.12);color:var(--accent);}
+
+/* FORM WIZARD */
+.form-wrap{max-width:700px;}
+.form-progress{margin-bottom:28px;}
+.form-progress-bar{width:100%;background:var(--surface2);border-radius:4px;height:4px;margin-bottom:8px;overflow:hidden;}
+.form-progress-fill{height:100%;background:var(--accent);border-radius:4px;transition:width 0.3s ease;}
+.form-progress-text{font-size:12px;color:var(--muted);}
+.form-step{display:none;}
+.form-step.active{display:block;}
+.step-header{margin-bottom:24px;}
+.step-label{font-size:12px;color:var(--accent);font-weight:600;letter-spacing:0.08em;text-transform:uppercase;font-family:var(--font-display);margin-bottom:6px;}
+.step-question{font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--text);line-height:1.2;}
+.radio-group{display:flex;flex-direction:column;gap:8px;}
+.radio-opt{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:14px 16px;cursor:pointer;font-size:15px;color:var(--text);}
+.radio-opt:hover{border-color:rgba(255,255,255,0.3);background:var(--surface2);}
+.radio-opt.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.radio-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.radio-opt.selected .radio-dot{border-color:var(--accent);background:var(--accent);}
+.radio-dot-inner{width:7px;height:7px;border-radius:50%;background:#0a0c10;display:none;}
+.radio-opt.selected .radio-dot-inner{display:block;}
+.form-input,.form-select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:15px;padding:13px 16px;}
+.form-select option{background:#1c2030;}
+.form-nav{display:flex;gap:12px;margin-top:28px;align-items:center;}
+.btn-next{background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:800;font-size:16px;border:none;padding:13px 32px;border-radius:var(--radius);cursor:pointer;}
+.btn-back-step{background:none;border:1px solid var(--border2);color:var(--muted);font-family:var(--font-body);font-size:14px;padding:13px 20px;border-radius:var(--radius);cursor:pointer;}
+
+/* ATHLETE VIEW */
+.athlete-wrap{max-width:600px;margin:0 auto;padding:24px 20px;}
+.athlete-header{text-align:center;padding:24px 0;margin-bottom:20px;}
+.athlete-big-avatar{width:80px;height:80px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:28px;font-weight:700;margin:0 auto 16px;}
+.athlete-name-big{font-family:var(--font-display);font-size:32px;font-weight:800;}
+.athlete-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;}
+.athlete-card-title{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.08em;color:var(--muted);text-transform:uppercase;margin-bottom:10px;}
+.athlete-type-big{font-family:var(--font-display);font-size:28px;font-weight:800;margin-bottom:8px;}
+.athlete-desc{font-size:14px;color:var(--text);line-height:1.6;}
+.athlete-checkin-card{background:var(--surface);border:1px solid rgba(232,255,71,0.2);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;}
+.athlete-checkin-title{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--accent);margin-bottom:20px;}
+.scale-row{margin-bottom:16px;}
+.scale-row-label{font-size:13px;color:var(--muted);margin-bottom:8px;font-weight:500;display:flex;justify-content:space-between;}
+.scale-row-label span{color:var(--accent);font-weight:700;}
+.scale-btns{display:flex;gap:6px;}
+.scale-btn{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:12px 4px;text-align:center;cursor:pointer;font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--muted);transition:all 0.12s;}
+.scale-btn.selected{border-color:var(--accent);background:var(--accent-dim);color:var(--accent);}
+.athlete-notes-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:14px;padding:10px 12px;resize:vertical;min-height:60px;margin-bottom:12px;line-height:1.5;}
+.athlete-notes-input::placeholder{color:var(--muted);}
+.athlete-submit-btn{width:100%;background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:800;font-size:16px;border:none;padding:13px;border-radius:var(--radius);cursor:pointer;}
+
+.empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.empty-title{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--text);margin-bottom:8px;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(10,12,16,0.3);border-top-color:#0a0c10;border-radius:50%;animation:spin 0.7s linear infinite;}
+.spinner-lg{display:inline-block;width:32px;height:32px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+.spinner-dark{display:inline-block;width:14px;height:14px;border:2px solid rgba(232,255,71,0.3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--accent);color:#0a0c10;font-family:var(--font-display);font-weight:700;font-size:15px;padding:12px 28px;border-radius:8px;transition:transform 0.3s ease;z-index:999;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+@media(max-width:640px){.page{padding:20px 16px;}.detail-grid,.coaching-panels,.call-grid,.slider-group,.log-grid{grid-template-columns:1fr;}.nav-links{display:none;}.step-question{font-size:20px;}.call-cell.say-this{grid-column:1;}}
+</style>
+</head>
+<body>
+
+<nav id="main-nav" style="display:none;">
+  <div class="logo">COACH<span>IQ</span></div>
+  <div class="nav-links" id="coach-nav-links">
+    <button class="nav-btn active" onclick="showPage('roster')">Roster</button>
+    <button class="nav-btn" onclick="startForm()">Add Player</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span id="nav-user" style="font-size:13px;color:var(--muted);"></span>
+    <button class="add-btn" id="nav-add-btn" onclick="startForm()" style="display:none;">+ Add Player</button>
+    <button class="logout-btn" onclick="handleLogout()">Log out</button>
+  </div>
+</nav>
+
+<!-- AUTH -->
+<div id="page-auth" class="auth-wrap">
+  <div style="width:100%;max-width:440px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <div class="auth-logo">COACH<span>IQ</span></div>
+      <div class="auth-sub">Player motivation platform</div>
+    </div>
+
+    <!-- WHO ARE YOU -->
+    <div id="auth-choose" style="display:flex;flex-direction:column;gap:16px;">
+      <div onclick="showCoachLogin()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">I'm a Coach</div>
+        <div style="font-size:13px;color:var(--muted);">Log in to view your roster, coaching calls, and player profiles.</div>
+      </div>
+      <div onclick="showPlayerLogin()" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:24px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--text);margin-bottom:6px;">I'm a Player</div>
+        <div style="font-size:13px;color:var(--muted);">View your motivation profile and submit your daily check-in.</div>
+      </div>
+    </div>
+
+    <!-- COACH LOGIN -->
+    <div id="auth-coach" style="display:none;">
+      <div class="auth-card">
+        <button onclick="showChoose()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;margin-bottom:20px;padding:0;">&#8592; Back</button>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--text);margin-bottom:4px;">Coach Login</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">Enter your credentials to access the coaching dashboard.</div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchAuthTab('login')">Log in</button>
+          <button class="auth-tab" onclick="switchAuthTab('signup')">Sign up</button>
+        </div>
+        <div id="auth-login">
+          <div class="auth-field"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com"></div>
+          <div class="auth-field"><label>Password</label><input type="password" id="login-password" placeholder="Your password"></div>
+          <div class="forgot-link"><a onclick="handleForgotPassword()">Forgot password?</a></div>
+          <button class="auth-btn" onclick="handleLogin()">Log in</button>
+          <div class="auth-error" id="login-error" style="color:var(--red);"></div>
+          <div style="text-align:center;margin:16px 0;font-size:13px;color:var(--muted);">— or —</div>
+          <div class="auth-field"><label>Staff Access Code</label><input type="password" id="staff-code" placeholder="Enter your staff code"></div>
+          <button class="auth-btn" style="background:var(--surface2);color:var(--text);border:1px solid var(--border2);" onclick="handleStaffCode()">Enter with Staff Code</button>
+          <div class="auth-error" id="staff-code-error" style="color:var(--red);margin-top:8px;text-align:center;"></div>
+        </div>
+        <div id="auth-signup" style="display:none;">
+          <div class="auth-field"><label>Email</label><input type="email" id="signup-email" placeholder="your@email.com"></div>
+          <div class="auth-field"><label>Password</label><input type="password" id="signup-password" placeholder="Create a password (6+ characters)"></div>
+          <div class="auth-field"><label>Confirm password</label><input type="password" id="signup-confirm" placeholder="Confirm password"></div>
+          <button class="auth-btn" onclick="handleSignup()">Create account</button>
+          <div class="auth-error" id="signup-error" style="color:var(--red);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PLAYER PIN LOGIN -->
+    <div id="auth-player" style="display:none;">
+      <div class="auth-card">
+        <button onclick="showChoose()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;margin-bottom:20px;padding:0;">&#8592; Back</button>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--text);margin-bottom:4px;">Player Login</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:24px;">Select your name and enter your 4-digit PIN from your coach.</div>
+        <div class="auth-field">
+          <label>Your name</label>
+          <select id="player-name-select" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:15px;padding:12px 16px;">
+            <option value="">Select your name...</option>
+          </select>
+        </div>
+        <div class="auth-field">
+          <label>Your PIN</label>
+          <input type="number" id="player-pin" placeholder="4-digit PIN" maxlength="4" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:var(--font-body);font-size:24px;padding:12px 16px;letter-spacing:0.2em;text-align:center;">
+        </div>
+        <button class="auth-btn" onclick="handlePlayerLogin()">View My Profile</button>
+        <div class="auth-error" id="player-login-error" style="color:var(--red);margin-top:10px;text-align:center;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COACH PAGES -->
+<div class="page" id="page-roster">
+  <div class="page-title">Player Roster</div>
+  <div class="page-sub" id="roster-sub">Loading players...</div>
+  <div class="alert-banner" id="alert-banner">
+    <div class="alert-banner-title"><div class="alert-dot"></div> Needs attention today</div>
+    <div class="alert-players" id="alert-players"></div>
+  </div>
+  <div class="type-filters" id="type-filters"></div>
+  <div class="roster-grid" id="roster-grid">
+    <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;height:40vh;flex-direction:column;gap:16px;">
+      <div class="spinner-lg"></div><p style="color:var(--muted);font-size:14px;">Loading...</p>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-detail">
+  <button class="back-btn" onclick="showPage('roster')">&#8592; Back to roster</button>
+  <div class="detail-header">
+    <div id="d-avatar" style="width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;flex-shrink:0;"></div>
+    <div style="flex:1;">
+      <div class="detail-name" id="d-name"></div>
+      <div class="detail-meta" id="d-meta"></div>
+      <div id="d-badges" style="margin-top:8px;"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+      <div id="d-drift"></div>
+      <button class="delete-btn" onclick="deletePlayer()">Delete player</button>
+    </div>
+  </div>
+
+  <!-- TODAY'S COACHING CALL — TOP OF PAGE, MOST IMPORTANT -->
+  <div class="coaching-call-card">
+    <div class="coaching-call-header">
+      <div class="coaching-call-title"><div class="live-dot"></div> Today's Coaching Call</div>
+      <button class="gen-btn" id="call-btn" onclick="generateCoachingCall()">
+        <span id="call-btn-text">Generate</span>
+      </button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:500;text-transform:uppercase;letter-spacing:0.06em;font-family:var(--font-display);">Today's situation</div>
+      <div class="situation-tags" id="situation-tags">
+        <div class="sit-tag" onclick="selectSituation('Low effort',this)">Low effort</div>
+        <div class="sit-tag" onclick="selectSituation('Great effort',this)">Great effort</div>
+        <div class="sit-tag" onclick="selectSituation('Needs confidence',this)">Needs confidence</div>
+        <div class="sit-tag" onclick="selectSituation('Bad body language',this)">Bad body language</div>
+        <div class="sit-tag" onclick="selectSituation('Responded well to coaching',this)">Responded well</div>
+        <div class="sit-tag" onclick="selectSituation('Not locked in',this)">Not locked in</div>
+        <div class="sit-tag" onclick="selectSituation('Leadership moment',this)">Leadership moment</div>
+        <div class="sit-tag" onclick="selectSituation('Tough practice day',this)">Tough practice day</div>
+        <div class="sit-tag" onclick="selectSituation('Needs challenge',this)">Needs challenge</div>
+        <div class="sit-tag" onclick="selectSituation('Needs encouragement',this)">Needs encouragement</div>
+        <div class="sit-tag" onclick="selectSituation('Coming off a mistake',this)">Coming off a mistake</div>
+        <div class="sit-tag" onclick="selectSituation('Needs accountability',this)">Needs accountability</div>
+        <div class="sit-tag" onclick="selectSituation('Good teammate',this)">Good teammate</div>
+        <div class="sit-tag" onclick="selectSituation('Needs consistency',this)">Needs consistency</div>
+        <div class="sit-tag" onclick="selectSituation('Bounce back today',this)">Bounce back today</div>
+      </div>
+    </div>
+    <div id="call-output">
+      <div class="coaching-call-empty">Select a situation tag above then click Generate.</div>
+    </div>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab-btn active" onclick="switchTab('profile')">Profile</button>
+    <button class="tab-btn" onclick="switchTab('checkin')">Check-in</button>
+    <button class="tab-btn" onclick="switchTab('log')">Practice Log</button>
+    <button class="tab-btn" onclick="switchTab('history')">History</button>
+    <button class="tab-btn" onclick="switchTab('ai')">AI Insights</button>
+  </div>
+
+  <div class="tab-content active" id="tab-profile">
+    <div class="detail-grid">
+      <div class="panel"><div class="panel-title">Motivation scores</div><div class="score-bars" id="d-bars"></div></div>
+      <div class="panel"><div class="panel-title">Profile radar</div><div style="display:flex;justify-content:center;"><svg id="d-radar" viewBox="0 0 220 220" width="200" height="200"></svg></div></div>
+    </div>
+    <div class="coaching-panels">
+      <div class="coaching-item"><div class="ci-label">What drives them</div><div class="ci-text" id="d-drives"></div></div>
+      <div class="coaching-item success"><div class="ci-label">Best coaching approach</div><div class="ci-text" id="d-approach"></div></div>
+      <div class="coaching-item danger"><div class="ci-label">What to avoid</div><div class="ci-text" id="d-avoid"></div></div>
+      <div class="coaching-item success"><div class="ci-label">Accountability strategy</div><div class="ci-text" id="d-accountability"></div></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-checkin">
+    <div class="checkin-form">
+      <div class="checkin-form-title">Today's Check-in</div>
+      <div class="slider-group">
+        <div class="slider-field">
+          <label>Motivation <span id="val-motivation">3</span>/5</label>
+          <input type="range" min="1" max="5" value="3" id="ci-motivation" oninput="document.getElementById('val-motivation').textContent=this.value">
+        </div>
+        <div class="slider-field">
+          <label>Confidence <span id="val-confidence">3</span>/5</label>
+          <input type="range" min="1" max="5" value="3" id="ci-confidence" oninput="document.getElementById('val-confidence').textContent=this.value">
+        </div>
+        <div class="slider-field">
+          <label>Focus <span id="val-focus">3</span>/5</label>
+          <input type="range" min="1" max="5" value="3" id="ci-focus" oninput="document.getElementById('val-focus').textContent=this.value">
+        </div>
+        <div class="slider-field">
+          <label>Energy <span id="val-energy">3</span>/5</label>
+          <input type="range" min="1" max="5" value="3" id="ci-energy" oninput="document.getElementById('val-energy').textContent=this.value">
+        </div>
+        <div class="slider-field">
+          <label>Stress <span id="val-stress">3</span>/5</label>
+          <input type="range" min="1" max="5" value="3" id="ci-stress" oninput="document.getElementById('val-stress').textContent=this.value">
+        </div>
+        <div class="slider-field">
+          <label>Frustration <span id="val-frustration">3</span>/5</label>
+          <input type="range" min="1" max="5" value="3" id="ci-frustration" oninput="document.getElementById('val-frustration').textContent=this.value">
+        </div>
+      </div>
+      <input class="one-word-input" type="text" id="ci-oneword" placeholder="One word — how are they showing up today?">
+      <textarea class="one-word-input" id="ci-note" placeholder="Coach note (optional)" style="margin-top:8px;min-height:60px;resize:vertical;"></textarea>
+      <button class="checkin-submit-btn" onclick="submitCheckin()">Save Check-in</button>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-log">
+    <div class="log-form">
+      <div class="log-form-title">Log a Practice Moment</div>
+      <div class="log-grid">
+        <div class="log-field"><label>Date</label><input type="date" id="log-date"></div>
+        <div class="log-field"><label>Situation</label>
+          <select id="log-situation">
+            <option value="">Select...</option>
+            <option>Low effort in drills</option>
+            <option>Mistake / mental error</option>
+            <option>Conflict with teammate</option>
+            <option>Great effort moment</option>
+            <option>Responding to correction</option>
+            <option>Pressure moment</option>
+            <option>Film session behavior</option>
+            <option>Pre-practice energy</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="log-field"><label>Coaching method used</label>
+          <select id="log-method">
+            <option value="">Select...</option>
+            <option>Private challenge</option>
+            <option>Public challenge</option>
+            <option>Private encouragement</option>
+            <option>Public praise</option>
+            <option>Clear reteach</option>
+            <option>Accountability warning</option>
+            <option>Competition drill</option>
+            <option>Pull aside reset</option>
+            <option>Future goal reminder</option>
+            <option>Role responsibility reminder</option>
+            <option>Ignored behavior</option>
+            <option>Team accountability</option>
+          </select>
+        </div>
+        <div class="log-field"><label>Did it work?</label>
+          <div class="worked-toggle">
+            <button class="worked-btn yes" id="worked-yes" onclick="setWorked('yes')">&#10003; Yes</button>
+            <button class="worked-btn no" id="worked-no" onclick="setWorked('no')">&#10007; No</button>
+          </div>
+        </div>
+      </div>
+      <div class="log-field" style="margin-bottom:12px;"><label>What happened — what did you observe?</label>
+        <textarea id="log-notes" placeholder="Keep it short. What did you see?"></textarea>
+      </div>
+      <button class="log-submit-btn" onclick="submitLog()">Save Log</button>
+    </div>
+    <div id="log-entries-container"></div>
+  </div>
+
+  <div class="tab-content" id="tab-history">
+    <div id="checkin-history-container"></div>
+  </div>
+
+  <div class="tab-content" id="tab-ai">
+    <div class="ai-panel">
+      <div class="ai-panel-header">
+        <div class="ai-panel-title"><div class="ai-dot"></div> Season AI Insight</div>
+        <button class="ai-analyze-btn" id="ai-btn" onclick="runAIAnalysis()"><span id="ai-btn-text">Analyze All Data</span></button>
+      </div>
+      <div id="ai-output"><div class="ai-empty">This analyzes all practice logs and check-ins across the season to show how this player is evolving and whether your coaching is working.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-add">
+  <button class="back-btn" onclick="showPage('roster')">&#8592; Cancel</button>
+  <div class="form-wrap">
+    <div class="form-progress"><div class="form-progress-bar"><div class="form-progress-fill" id="progress-fill" style="width:0%"></div></div><div class="form-progress-text" id="progress-text">Step 1 of 23</div></div>
+    <div id="form-steps"></div>
+  </div>
+</div>
+
+<!-- ATHLETE PAGE -->
+<div class="page" id="page-athlete">
+  <div class="athlete-wrap" id="athlete-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://xuewdxeprwbgwiijsfsn.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1ZXdkeGVwcndiZ3dpaWpzZnNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5OTkzOTcsImV4cCI6MjA5MTU3NTM5N30.8z-46H3QdbJAzpAJhS1MDbCFkqVbPl4QbUvxVN-rLBw';
+const COACH_EMAIL='meador2307@gmail.com';
+const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const TYPES=['Competitor','Relational','Status-Driven','Future-Driven','Confidence-Based'];
+const TYPE_COLORS={'Competitor':'#5b9cf6','Relational':'#2dd4a0','Status-Driven':'#ff9d4d','Future-Driven':'#b794f4','Confidence-Based':'#ff7eb3'};
+const TYPE_BG={'Competitor':'rgba(91,156,246,0.15)','Relational':'rgba(45,212,160,0.15)','Status-Driven':'rgba(255,157,77,0.15)','Future-Driven':'rgba(183,148,244,0.15)','Confidence-Based':'rgba(255,126,179,0.15)'};
+const AVATAR_COLORS=['#5b9cf6','#2dd4a0','#ff9d4d','#b794f4','#ff7eb3','#e8ff47'];
+const TYPE_PLAYER_DESC={'Competitor':'You are motivated by winning, competition, and proving yourself. You play best when the game is on the line and you have something to prove.','Relational':'You are motivated by your teammates and not letting them down. You play best when you feel connected to the people around you.','Status-Driven':"You are motivated by recognition and respect. You play best when your effort is noticed and your value to the team is clear.",'Future-Driven':"You are motivated by your future goals. You play best when you can see how today's work connects to where you want to go.",'Confidence-Based':'You are motivated by clarity and confidence. You play best when you know exactly what to do and feel good about your ability.'};
+
+const COACHING_TEXT={'Competitor':{drives:'Winning, competing, being tested, and proving they can beat others.',approach:'Challenge directly. Use competition drills, keep score, and make winning visible.',avoid:'Long passive coaching, boredom, and unclear competitive standards.',accountability:'Tie effort to standards, competition, and earning reps.'},'Relational':{drives:'Team connection, trust, loyalty, and not letting others down.',approach:'Coach through trust and responsibility to teammates. Build connection first.',avoid:'Isolation, disrespect, or coaching that damages team trust.',accountability:'Tie effort to brotherhood, responsibility, and team standards.'},'Status-Driven':{drives:'Recognition, respect, praise, and being seen as valuable.',approach:'Recognize effort publicly. Reward consistency and make improvement visible.',avoid:'Ignoring effort, overlooking improvement, and giving vague or absent feedback.',accountability:'Tie effort to visibility, leadership opportunities, and earned recognition.'},'Future-Driven':{drives:'Long-term goals, improvement, and investing in their future.',approach:"Connect daily work to long-term outcomes. Show how today's rep builds tomorrow.",avoid:"Short-term thinking only.",accountability:'Tie effort to their personal growth plan and next-level aspirations.'},'Confidence-Based':{drives:'Clarity, confidence, encouragement, and small wins that build belief.',approach:'Give clear instruction. Build confidence intentionally. Correct without crushing.',avoid:'Public embarrassment, confusion, and constant negative correction.',accountability:'Tie effort to confidence-building habits, ownership, and clear expectations.'}};
+
+const SCORING={Q2:{'Winning games':[2,0,0,0,0],'Playing time':[1,0,2,1,0],'Getting better':[1,0,0,2,1],'Recognition':[0,0,2,1,0],'Having fun':[0,1,0,0,1]},Q5:{'Winning':[2,0,0,0,0],'Recognition/praise':[0,0,2,0,0],'Not letting teammates down':[0,2,0,0,0],'Competition':[2,0,0,0,0],'Proving people wrong':[1,0,1,1,0]},Q7:{'During competition':[2,0,0,0,0],'When coach challenges me':[2,0,1,0,0],"When I'm confident":[0,0,0,0,2],'When teammates depend on me':[0,2,0,0,0]},Q8:{'Boredom':[1,0,0,0,0],'Confusion':[0,0,0,0,2],'Getting corrected':[0,0,0,0,2],'Losing reps':[1,0,1,0,0]},Q9:{'Being pushed hard':[2,0,0,0,0],'Encouragement':[0,1,0,0,1],'Clear instruction':[0,0,0,0,2],'One-on-one conversation':[0,1,0,0,1]},Q10:{'Direct and loud':[2,0,0,0,0],'Direct and calm':[1,0,0,0,1],'Private conversation':[0,1,0,0,2],'Film explanation':[0,0,0,1,1]},Q11:{'Being called out publicly':[0,0,0,0,2],'Not knowing what to do':[0,0,0,0,2],'Feeling overlooked':[0,0,2,0,0],'Too much talking':[1,0,0,0,0]},Q12:{'Getting another rep':[2,0,0,0,0],'Encouragement':[0,1,0,0,1],'Being corrected immediately':[1,0,0,0,1],'Time to reset':[0,0,0,0,2]},Q15:{'Respect':[0,1,1,0,0],'Trust':[0,2,0,0,0],'Friendship':[0,2,0,0,1],'Competition':[2,0,0,0,0]},Q16:{'Yes':[0,2,0,0,0],'Sometimes':[0,1,0,0,0],'Not really':[1,0,0,0,0]},Q17:{'Very confident':[1,0,1,0,0],'Somewhat':[0,0,0,0,1],'Not confident':[0,0,0,0,2]},Q18:{'Mistakes':[0,0,0,0,1],"Coaches' reactions":[0,0,0,0,2],"Teammates' reactions":[0,1,1,0,1],'Losing':[1,0,0,0,0]},Q19:{'Play better':[2,0,1,0,0],'Stay the same':[0,0,0,1,1],'Struggle':[0,0,0,0,2]},Q20:{'Fear of failing':[0,0,0,0,2],'Desire to succeed':[1,0,1,2,0]}};
+
+const STEPS=[{id:'name',section:'Player info',question:"What is the player's full name?",type:'text',placeholder:'First and last name'},{id:'pos',section:'Player info',question:'What position do they play?',type:'select',opts:['QB','RB','WR','TE','OL','DL','LB','CB','S','K/P','ATH']},{id:'grade',section:'Player info',question:'What grade will they be in fall 2026?',type:'select',opts:['9','10','11','12']},{id:'Q1',section:'Identity',question:'What kind of player do you want to be known as?',type:'radio',opts:['Tough','Smart','Reliable','Playmaker','Leader'],scoring:false},{id:'Q2',section:'Motivation',question:'What matters most to you this season?',type:'radio',opts:['Winning games','Playing time','Getting better','Recognition','Having fun']},{id:'Q3',section:'Future',question:'Do you want to play football after high school?',type:'radio',opts:['Yes (very serious)','Maybe','No'],scoring:false},{id:'Q4',section:'Future',question:'How important is football to your future?',type:'radio',opts:['Very important','Somewhat','Not really'],scoring:false},{id:'Q5',section:'Motivation',question:'What motivates you the MOST?',type:'radio',opts:['Winning','Recognition/praise','Not letting teammates down','Competition','Proving people wrong']},{id:'Q6',section:'Motivation',question:'What motivates you the LEAST?',type:'radio',opts:['Winning','Recognition/praise','Not letting teammates down','Competition','Proving people wrong'],scoring:false},{id:'Q7',section:'Focus',question:'When do you feel most locked in?',type:'radio',opts:['During competition','When coach challenges me',"When I'm confident",'When teammates depend on me']},{id:'Q8',section:'Focus',question:'What makes you lose focus the most?',type:'radio',opts:['Boredom','Confusion','Getting corrected','Losing reps']},{id:'Q9',section:'Coaching style',question:'How do you respond best to coaching?',type:'radio',opts:['Being pushed hard','Encouragement','Clear instruction','One-on-one conversation']},{id:'Q10',section:'Coaching style',question:'What type of correction helps you improve most?',type:'radio',opts:['Direct and loud','Direct and calm','Private conversation','Film explanation']},{id:'Q11',section:'Coaching style',question:'What frustrates you most from coaches?',type:'radio',opts:['Being called out publicly','Not knowing what to do','Feeling overlooked','Too much talking']},{id:'Q12',section:'Coaching style',question:'After you mess up, what helps you recover fastest?',type:'radio',opts:['Getting another rep','Encouragement','Being corrected immediately','Time to reset']},{id:'Q13',section:'Team & accountability',question:'If a teammate gives low effort, what should happen?',type:'radio',opts:['Called out publicly','Pulled aside','Lose reps','Extra accountability'],scoring:false},{id:'Q14',section:'Team & accountability',question:'If YOU give low effort, what should happen?',type:'radio',opts:['Called out publicly','Pulled aside','Lose reps','Extra accountability'],scoring:false},{id:'Q15',section:'Team & accountability',question:'What matters most to you about your teammates?',type:'radio',opts:['Respect','Trust','Friendship','Competition']},{id:'Q16',section:'Team & accountability',question:'Do you feel like your teammates depend on you?',type:'radio',opts:['Yes','Sometimes','Not really']},{id:'Q17',section:'Confidence',question:'How confident are you in your ability right now?',type:'radio',opts:['Very confident','Somewhat','Not confident']},{id:'Q18',section:'Confidence',question:'What hurts your confidence the most?',type:'radio',opts:['Mistakes',"Coaches' reactions","Teammates' reactions",'Losing']},{id:'Q19',section:'Pressure',question:'When pressure increases, you:',type:'radio',opts:['Play better','Stay the same','Struggle']},{id:'Q20',section:'Pressure',question:'What drives you more?',type:'radio',opts:['Fear of failing','Desire to succeed']}];
+
+let players=[],playerCheckins={},currentFilter='All',currentPlayer=null,currentLogs=[],currentCheckins=[],currentStep=0,formAnswers={},logWorked=null,currentUser=null,isCoach=false,athleteScores={motivation:3,confidence:3,focus:3,energy:3,stress:3,frustration:3},currentAthletePlayer=null;
+
+function getPrimary(s){return TYPES.reduce((a,b)=>s[a]>=s[b]?a:b);}
+function getSecondary(s){return[...TYPES].sort((a,b)=>s[b]-s[a])[1];}
+function initials(n){return n.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();}
+function avatarColor(n){return AVATAR_COLORS[n.charCodeAt(0)%AVATAR_COLORS.length];}
+function scoreColor(s){return s<=2?'cs-low':s<=3?'cs-mid':'cs-high';}
+function badge(type,size='normal'){const fs=size==='sm'?'10px':'12px',pad=size==='sm'?'2px 8px':'3px 12px';return `<span style="display:inline-flex;align-items:center;padding:${pad};border-radius:20px;font-size:${fs};font-weight:700;font-family:'Barlow Condensed',sans-serif;background:${TYPE_BG[type]};color:${TYPE_COLORS[type]};">${type}</span>`;}
+
+// ── OPENAI KEY ──
+const OPENAI_KEY = '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';
+
+// ── FALLBACK LIBRARY ──
+const FALLBACKS = {
+  'Competitor': {
+    'Low effort': ["Talent doesn't separate people—competing does. Bring an edge today.", "If you want to be different, your effort has to look different. Attack practice."],
+    'Great effort': ["That's the standard—now stack another one just like it.", "That's how competitors practice. Keep that edge going."],
+    'Needs confidence': ["You've done this before. Stop thinking and start competing.", "Trust your work and go compete. You're ready."],
+    'Bad body language': ["Your body is telling your teammates you've quit. Flip the switch.", "Champions don't pout. Reset and compete."],
+    'Responded well to coaching': ["That's how you get better. Lock that correction in and compete.", "Good response. Now do it again at full speed."],
+    'Not locked in': ["You're here but you're not here. Compete or you're wasting your time.", "Get locked in. The reps you waste today are reps someone else is taking."],
+    'Leadership moment': ["Your teammates are watching how you compete right now. Set the tone.", "Lead with effort. Everything else follows."],
+    'Tough practice day': ["Tough days build tough players. Keep competing.", "This is exactly the practice you needed. Don't back down."],
+    'Needs challenge': ["Raise your standard today. Good enough isn't your ceiling.", "Compete against your best self today. That's the hardest opponent."],
+    'Needs encouragement': ["You're closer than you think. Keep competing.", "Stay in it. Competitors don't quit when it gets hard."],
+    'Coming off a mistake': ["Flush it. Next rep is all that matters. Compete.", "Best competitors have short memories. Go attack the next one."],
+    'Needs accountability': ["The standard doesn't move for anybody. Do your job.", "Hold yourself to the standard you said you wanted."],
+    'Good teammate': ["That's what competitors who win look like. Keep it up.", "Compete and carry others with you. That's leadership."],
+    'Needs consistency': ["One good rep isn't enough. Compete on every single one.", "Consistency is what separates players. Stack good reps."],
+    'Bounce back today': ["How you respond tells everybody who you are. Compete.", "Bounce back hard today. That's what competitors do."]
+  },
+  'Relational': {
+    'Low effort': ["I'm pushing you because you matter to this group, and we need your best. Bring energy today and let your teammates feel you.", "Your team needs your presence, not just your body out there. Show up with real effort today."],
+    'Great effort': ["Your teammates can feel that energy. That's how you build trust.", "That's what being a great teammate looks like. Keep it up."],
+    'Needs confidence': ["Your teammates believe in you. Let that carry you today.", "This group needs you at your best. Go be that for them."],
+    'Bad body language': ["Your body language is affecting your teammates. Choose to lift them.", "This team feeds off each other. Give them something good to feed off."],
+    'Responded well to coaching': ["That response is what your teammates need from you. Keep it going.", "That's how you build trust with this team. Good response."],
+    'Not locked in': ["Your teammates need you locked in. Where are you right now?", "This team is better when you're all the way in. Come back."],
+    'Leadership moment': ["Your teammates need you to lead right now. Step up.", "Be the guy this team can count on in this moment."],
+    'Tough practice day': ["Lean on your teammates and let them lean on you. That's what gets you through.", "Hard days are for teams. Pull together."],
+    'Needs challenge': ["Your teammates are counting on you to raise the standard. Deliver.", "Push yourself for the guys next to you."],
+    'Needs encouragement': ["You've got teammates who want to see you succeed. Don't let the moment be bigger than your bond.", "This team is in your corner. Trust it."],
+    'Coming off a mistake': ["Your teammates don't need perfect—they need you back. Come back.", "Shake it off. Your team needs you right now."],
+    'Needs accountability': ["Be somebody the team can count on today. Do your job.", "Your teammates are counting on you. Don't let them down."],
+    'Good teammate': ["That's the kind of teammate that wins championships. Be that every day.", "Your teammates notice. Keep pouring into them."],
+    'Needs consistency': ["Your team needs to know they can count on you every single rep.", "Be dependable today. That's what great teammates do."],
+    'Bounce back today': ["Your team needs your bounce back. Come back strong for them.", "Pick yourself up and bring your teammates with you."]
+  },
+  'Status-Driven': {
+    'Low effort': ["People notice effort—or the lack of it. What story are you telling right now?", "You want to be respected? Earn it today with how you work."],
+    'Great effort': ["That kind of work gets noticed. Stack another day like that.", "People see the way you've been working—keep earning respect."],
+    'Needs confidence': ["You've put in the work to be here. Go show what you're made of.", "Step up and show everyone what you're capable of."],
+    'Bad body language': ["How you carry yourself tells everyone what you think of yourself.", "Stand tall. Your presence matters in this room."],
+    'Responded well to coaching': ["That's the kind of coachability that gets you recognized.", "Smart players respond like that. People notice."],
+    'Not locked in': ["Right now you're invisible. That's not what you want.", "You didn't come here to blend in. Get locked in."],
+    'Leadership moment': ["This is your chance to show everyone what you're about. Take it.", "Be someone worth watching right now."],
+    'Tough practice day': ["How you handle tough days defines your reputation. Respond well.", "This is where reputations are built. Go earn yours."],
+    'Needs challenge': ["Go do something today that makes coaches talk about you.", "Raise your game and make everyone take notice."],
+    'Needs encouragement': ["You've worked too hard to give up now. Let people see that work.", "Your reputation is built one rep at a time. Keep building."],
+    'Coming off a mistake': ["How you respond to a mistake says more than the mistake did.", "Respond the right way and everyone will respect it."],
+    'Needs accountability': ["Accountability builds the reputation you say you want.", "Hold yourself to the standard you want to be known for."],
+    'Good teammate': ["Being a great teammate is how you build lasting respect.", "That's the kind of player people remember."],
+    'Needs consistency': ["Consistency is what builds a reputation. Be consistent today.", "One good rep isn't a reputation. Stack them."],
+    'Bounce back today': ["How you bounce back is what defines you. Make it count.", "Respond the right way and change the story."]
+  },
+  'Future-Driven': {
+    'Low effort': ["The player you want to be next year is built by what you do today.", "Every rep you give today is an investment in where you're going."],
+    'Great effort': ["That's the version of you that gets to the next level. Keep building.", "Store that feeling—that's what growth looks like."],
+    'Needs confidence': ["You've been putting in the work. Trust the process and execute.", "Get better on purpose today. Take one coaching point and own it."],
+    'Bad body language': ["The player you want to become doesn't carry himself like that.", "Your future self is watching. Choose the right posture."],
+    'Responded well to coaching': ["That's how you get better on purpose. Lock that in.", "Don't chase perfect—chase improvement. You just did it."],
+    'Not locked in': ["You can't get better when you're somewhere else. Come back.", "Every unfocused rep is a missed opportunity to improve."],
+    'Leadership moment': ["The player you're becoming leads in moments like this.", "Future you makes the right play here. Be that player."],
+    'Tough practice day': ["Tough days are the ones you'll remember that made you better.", "This is exactly what growth looks like. Stay in it."],
+    'Needs challenge': ["Get better on purpose today. Take one coaching point and own it.", "Set a higher standard today than you had yesterday."],
+    'Needs encouragement': ["You're closer to where you want to be than you think.", "Keep stacking. You're building something real."],
+    'Coming off a mistake': ["Mistakes are data. Use it to get better right now.", "Process it, learn from it, go execute."],
+    'Needs accountability': ["The player you want to become holds himself to a high standard.", "Accountability today builds the player you want to be."],
+    'Good teammate': ["Great players make everyone around them better. Keep doing that.", "That's the kind of growth that elevates a whole team."],
+    'Needs consistency': ["Stack consistent reps today. That's how growth compounds.", "Every consistent rep moves you closer to where you want to go."],
+    'Bounce back today': ["Growth happens after adversity. This is your moment.", "Use this as fuel. The best version of you responds well."]
+  },
+  'Confidence-Based': {
+    'Low effort': ["You know what to do. Execute with confidence and let the effort follow.", "Clear mind, confident body. Trust your training today."],
+    'Great effort': ["That's what happens when you play with confidence. Stay in that zone.", "You look locked in. Stay right there."],
+    'Needs confidence': ["You know this. Trust what you've practiced and go execute.", "One thing at a time. Own one rep and build from there."],
+    'Bad body language': ["Your body is fighting your brain right now. Reset and stand tall.", "Confident posture first. The performance follows."],
+    'Responded well to coaching': ["That's what happens when you understand the assignment. Now own it.", "Clear instruction, confident execution. Keep that up."],
+    'Not locked in': ["Confusion kills confidence. What do you need to be clear on right now?", "Get clear on your job and go execute it confidently."],
+    'Leadership moment': ["You know what to do. Lead with clarity and confidence right now.", "This is your moment. Execute with confidence."],
+    'Tough practice day': ["Stay clear on your assignment. Execute that and nothing else.", "Don't overthink it. Do your job with confidence."],
+    'Needs challenge': ["You're ready for more. Raise the standard you hold yourself to.", "You're better than you're showing. Go prove it."],
+    'Needs encouragement': ["You're more prepared than you feel right now. Trust it.", "The work is there. Let yourself play with confidence."],
+    'Coming off a mistake': ["Reset mentally. Get clear on your job and go execute.", "One rep at a time. Clear head, confident play."],
+    'Needs accountability': ["Hold yourself to the standard you know you're capable of.", "You know what right looks like. Do that."],
+    'Good teammate': ["Your confidence lifts everyone around you. Keep sharing it.", "Playing confident and being a good teammate—that's the formula."],
+    'Needs consistency': ["Lock in on one thing and do it with full confidence every rep.", "Confidence comes from consistent execution. Stack the reps."],
+    'Bounce back today': ["Clear your head, trust your training, and go execute.", "Reset. You know what to do. Go do it."]
+  }
+};
+
+const UNIVERSAL_FALLBACKS = [
+  "Bring your best effort and be coachable today. The standard is the standard.",
+  "Attack today with focus, energy, and discipline. Do your job.",
+  "Respond the right way today—good attitude, great effort, strong finish.",
+  "Be consistent, be tough, and be dependable today."
+];
+
+let currentSituationTag = null;
+
+function selectSituation(tag, el) {
+  currentSituationTag = tag;
+  document.querySelectorAll('.sit-tag').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function getFallbackMessage(player, situationTag) {
+  const prim = getPrimary(player.scores);
+  const typeMessages = FALLBACKS[prim];
+  if(typeMessages && typeMessages[situationTag] && typeMessages[situationTag].length > 0) {
+    const msgs = typeMessages[situationTag];
+    return msgs[Math.floor(Math.random() * msgs.length)];
+  }
+  // fallback by type only
+  if(typeMessages) {
+    const allMsgs = Object.values(typeMessages).flat();
+    return allMsgs[Math.floor(Math.random() * allMsgs.length)];
+  }
+  return UNIVERSAL_FALLBACKS[Math.floor(Math.random() * UNIVERSAL_FALLBACKS.length)];
+}
+
+async function callOpenAI(prompt) {
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_KEY}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      max_tokens: 150,
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an elite high school football coach assistant. Generate a short daily coaching message for a player. Rules: Sound like a real coach, not a therapist or corporate HR. Be direct, practical, and motivating. Keep the message to 1-2 short sentences. Do not use fluff. Do not sound robotic. Match the player's motivation style. If highly relational, lead with connection/trust/belonging. If highly competitive, lead with challenge/standard/winning. If both high, blend naturally. Focus on what the coach should say today. Never shame the player. Hold a high standard. Use simple language a coach could say out loud. Do not include quotation marks. Return only the coaching message, nothing else.`
+        },
+        { role: 'user', content: prompt }
+      ]
+    })
+  });
+  if(!response.ok) throw new Error('API error ' + response.status);
+  const data = await response.json();
+  return data.choices[0].message.content.trim();
+}
+
+async function generateCoachingCall() {
+  if(!currentPlayer) return;
+  if(!currentSituationTag) { showToast('Select a situation tag first'); return; }
+
+  const btn = document.getElementById('call-btn');
+  const out = document.getElementById('call-output');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span> Generating...`;
+
+  const prim = getPrimary(currentPlayer.scores);
+  const sec = getSecondary(currentPlayer.scores);
+  const sorted = [...TYPES].sort((a,b) => currentPlayer.scores[b] - currentPlayer.scores[a]);
+
+  const prompt = `Player Name: ${currentPlayer.name}
+Position: ${currentPlayer.pos}
+Grade: ${currentPlayer.grade}
+Motivation Scores:
+- Competitor: ${currentPlayer.scores['Competitor']}
+- Relational: ${currentPlayer.scores['Relational']}
+- Status-Driven: ${currentPlayer.scores['Status-Driven']}
+- Future-Driven: ${currentPlayer.scores['Future-Driven']}
+- Confidence-Based: ${currentPlayer.scores['Confidence-Based']}
+Top Motivation Types:
+1. ${sorted[0]}
+2. ${sorted[1]}
+Today's Situation: ${currentSituationTag}
+Instructions: Write a 1-2 sentence coaching message for this player for today. Make it sound like a strong high school football coach. Keep it short and usable immediately.`;
+
+  let message = null;
+  let source = 'ai';
+
+  // Try OpenAI, retry once on failure
+  try {
+    message = await callOpenAI(prompt);
+  } catch(err) {
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      message = await callOpenAI(prompt);
+    } catch(err2) {
+      message = null;
+    }
+  }
+
+  // Use fallback if AI failed
+  if(!message || message.length < 10) {
+    message = getFallbackMessage(currentPlayer, currentSituationTag);
+    source = 'fallback';
+  }
+
+  renderCoachingCall(message, source, prim);
+  btn.disabled = false;
+  btn.innerHTML = `<span id="call-btn-text">Try Again</span>`;
+}
+
+function renderCoachingCall(message, source, prim) {
+  const color = TYPE_COLORS[prim] || 'var(--accent)';
+  document.getElementById('call-output').innerHTML = `
+    <div class="coaching-message-box">
+      <div class="coaching-message-text">${message}</div>
+      <div class="coaching-message-source">${source === 'ai' ? 'AI generated' : 'Coaching library'} · ${currentSituationTag}</div>
+    </div>`;
+}
+
+// ── AUTH NAVIGATION ──
+function showChoose(){
+  document.getElementById('auth-choose').style.display='flex';
+  document.getElementById('auth-coach').style.display='none';
+  document.getElementById('auth-player').style.display='none';
+}
+function showCoachLogin(){
+  document.getElementById('auth-choose').style.display='none';
+  document.getElementById('auth-coach').style.display='block';
+  document.getElementById('auth-player').style.display='none';
+}
+function showPlayerLogin(){
+  document.getElementById('auth-choose').style.display='none';
+  document.getElementById('auth-coach').style.display='none';
+  document.getElementById('auth-player').style.display='block';
+  populatePlayerSelect();
+}
+function populatePlayerSelect(){
+  const sel=document.getElementById('player-name-select');
+  sel.innerHTML='<option value="">Select your name...</option>';
+  [...players].sort((a,b)=>a.name.localeCompare(b.name)).forEach(p=>{
+    const opt=document.createElement('option');
+    opt.value=p.id;opt.textContent=p.name;sel.appendChild(opt);
+  });
+}
+function generatePin(name){let h=0;for(let i=0;i<name.length;i++){h=((h<<5)-h)+name.charCodeAt(i);h|=0;}return String(Math.abs(h)%9000+1000);}
+
+const STAFF_CODE = 'Hurricane2026$';
+
+function handleStaffCode(){
+  const code = document.getElementById('staff-code').value.trim();
+  const err = document.getElementById('staff-code-error');
+  err.textContent = '';
+  if(!code){err.textContent='Please enter the staff code.';return;}
+  if(code !== STAFF_CODE){err.textContent='Incorrect staff code. Try again.';return;}
+  // Grant coach access without Supabase login
+  isCoach = true;
+  currentUser = {email:'staff@coachiq.app'};
+  document.getElementById('page-auth').style.display='none';
+  document.getElementById('main-nav').style.display='flex';
+  document.getElementById('nav-user').textContent='Coach';
+  document.getElementById('coach-nav-links').style.display='flex';
+  document.getElementById('nav-add-btn').style.display='block';
+  showPage('roster');
+}
+
+function handlePlayerLogin(){
+  const pid=document.getElementById('player-name-select').value;
+  const pin=document.getElementById('player-pin').value.trim();
+  const err=document.getElementById('player-login-error');
+  err.textContent='';
+  if(!pid){err.textContent='Please select your name.';return;}
+  const player=players.find(p=>p.id===pid);
+  if(!player){err.textContent='Player not found.';return;}
+  const expectedPin=player.pin||generatePin(player.name);
+  if(pin!==String(expectedPin)){err.textContent='Incorrect PIN. Ask your coach for your 4-digit PIN.';return;}
+  document.getElementById('page-auth').style.display='none';
+  document.getElementById('main-nav').style.display='flex';
+  document.getElementById('nav-user').textContent=player.name;
+  document.getElementById('coach-nav-links').style.display='none';
+  document.getElementById('nav-add-btn').style.display='none';
+  renderAthleteProfile(player);
+}
+
+function switchAuthTab(tab){
+  document.querySelectorAll('.auth-tab').forEach((b,i)=>b.classList.toggle('active',['login','signup'][i]===tab));
+  document.getElementById('auth-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('auth-signup').style.display=tab==='signup'?'block':'none';
+}
+
+async function handleLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const password=document.getElementById('login-password').value;
+  const err=document.getElementById('login-error');
+  err.textContent='';
+  if(!email||!password){err.textContent='Please enter email and password.';return;}
+  const{data,error}=await db.auth.signInWithPassword({email,password});
+  if(error){err.textContent=error.message;return;}
+  onAuthSuccess(data.user);
+}
+
+async function handleSignup(){
+  const email=document.getElementById('signup-email').value.trim();
+  const password=document.getElementById('signup-password').value;
+  const confirm=document.getElementById('signup-confirm').value;
+  const err=document.getElementById('signup-error');
+  err.textContent='';
+  if(!email||!password){err.textContent='Please fill in all fields.';return;}
+  if(password!==confirm){err.textContent='Passwords do not match.';return;}
+  if(password.length<6){err.textContent='Password must be at least 6 characters.';return;}
+  const{data,error}=await db.auth.signUp({email,password});
+  if(error){err.textContent=error.message;return;}
+  if(data.user&&!data.session){err.style.color='var(--teal)';err.textContent='Check your email to confirm your account, then log in!';}
+  else if(data.user){onAuthSuccess(data.user);}
+}
+
+async function handleForgotPassword(){
+  const email=document.getElementById('login-email').value.trim();
+  if(!email){document.getElementById('login-error').textContent='Enter your email above first.';return;}
+  const{error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+  const err=document.getElementById('login-error');
+  if(error){err.textContent=error.message;}
+  else{err.style.color='var(--teal)';err.textContent='Password reset email sent! Check your inbox.';}
+}
+
+async function handleLogout(){
+  await db.auth.signOut();
+  currentUser=null;isCoach=false;currentAthletePlayer=null;
+  document.getElementById('main-nav').style.display='none';
+  document.getElementById('page-auth').style.display='flex';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  showChoose();
+}
+
+async function onAuthSuccess(user){
+  currentUser=user;
+  isCoach=true;
+  document.getElementById('page-auth').style.display='none';
+  document.getElementById('main-nav').style.display='flex';
+  document.getElementById('nav-user').textContent='Coach';
+  document.getElementById('coach-nav-links').style.display='flex';
+  document.getElementById('nav-add-btn').style.display='block';
+  await loadPlayers();
+  showPage('roster');
+}
+
+// ── DATA ──
+async function loadPlayers(){
+  const{data,error}=await db.from('players').select('*').order('created_at',{ascending:true});
+  if(error){showToast('Error loading players');return;}
+  players=data||[];
+  await loadAllCheckins();
+}
+
+async function loadAllCheckins(){
+  const{data}=await db.from('checkins').select('*').order('created_at',{ascending:false});
+  if(!data)return;
+  playerCheckins={};
+  data.forEach(c=>{if(c.player_id){if(!playerCheckins[c.player_id])playerCheckins[c.player_id]=[];playerCheckins[c.player_id].push(c);}});
+}
+
+async function loadLogs(pid){const{data}=await db.from('practice_logs').select('*').eq('player_id',pid).order('created_at',{ascending:false});return data||[];}
+async function loadCheckins(pid){const{data}=await db.from('checkins').select('*').eq('player_id',pid).order('created_at',{ascending:false}).limit(30);return data||[];}
+function getLatestCheckin(pid){const c=playerCheckins[pid]||[];return c.length>0?c[0]:null;}
+function isAlert(pid){
+  const c=getLatestCheckin(pid);if(!c)return false;
+  const today=new Date().toISOString().split('T')[0];
+  if(c.created_at.split('T')[0]!==today)return false;
+  const mot=c.motivation_score||c.mental_score||5;
+  const conf=c.confidence_score||5;
+  const frus=c.frustration_score||0;
+  return(mot<=2||conf<=2||frus>=4);
+}
+
+// ── ROSTER ──
+function renderRoster(){
+  const fil=document.getElementById('type-filters'),grid=document.getElementById('roster-grid'),sub=document.getElementById('roster-sub');
+  fil.innerHTML=['All',...TYPES].map(t=>{const isActive=currentFilter===t,bg=isActive?(t==='All'?'#e8ff47':TYPE_COLORS[t]):'none',color=isActive?'#0a0c10':'',border=isActive?(t==='All'?'#e8ff47':TYPE_COLORS[t]):'rgba(255,255,255,0.13)';return `<button class="type-pill" style="background:${bg};color:${color};border-color:${border};" onclick="setFilter('${t}')">${t}</button>`;}).join('');
+  const filtered=currentFilter==='All'?players:players.filter(p=>getPrimary(p.scores)===currentFilter);
+  sub.textContent=`${filtered.length} player${filtered.length!==1?'s':''} · synced to cloud`;
+  const alertPlayers=players.filter(p=>isAlert(p.id));
+  const banner=document.getElementById('alert-banner'),alertList=document.getElementById('alert-players');
+  if(alertPlayers.length>0){banner.classList.add('visible');alertList.innerHTML=alertPlayers.map(p=>`<div class="alert-chip" onclick="showDetail('${p.id}')">${p.name} — needs attention</div>`).join('');}
+  else{banner.classList.remove('visible');}
+  if(!filtered.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="empty-title">No players yet</div><p>Add your first player above.</p></div>`;return;}
+  grid.innerHTML=filtered.map(p=>{
+    const prim=getPrimary(p.scores),sec=getSecondary(p.scores),hasAI=!!p.ai_insight,alert=isAlert(p.id),latest=getLatestCheckin(p.id);
+    const bars=TYPES.map(t=>`<div class="mini-bar-row"><span class="mini-bar-lbl">${t.split('-')[0]}</span><div class="mini-bar-track"><div class="mini-bar-fill" style="width:${Math.round(p.scores[t]/16*100)}%;background:${TYPE_COLORS[t]};"></div></div></div>`).join('');
+    const checkinHtml=latest?`<div class="checkin-scores"><div class="checkin-score"><span class="cs-label">Motivation</span><span class="cs-value ${scoreColor(latest.motivation_score||latest.mental_score||3)}">${latest.motivation_score||latest.mental_score||'—'}/5</span></div><div class="checkin-score"><span class="cs-label">Confidence</span><span class="cs-value ${scoreColor(latest.confidence_score||3)}">${latest.confidence_score||'—'}/5</span></div><div class="checkin-score"><span class="cs-label">Focus</span><span class="cs-value ${scoreColor(latest.focus_score||3)}">${latest.focus_score||'—'}/5</span></div></div>`:'';
+    return `<div class="player-card${alert?' alert-card':''}" onclick="showDetail('${p.id}')"><div class="card-top"><div class="avatar" style="background:${avatarColor(p.name)}22;color:${avatarColor(p.name)}">${initials(p.name)}</div><div><div class="card-name">${alert?'&#9888; ':''}${p.name}</div><div class="card-meta">${p.pos} · Grade ${p.grade}</div><div style="margin-top:6px;">${badge(prim,'sm')} ${badge(sec,'sm')}${hasAI?` <span style="display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;font-family:'Barlow Condensed',sans-serif;background:rgba(232,255,71,0.12);color:#e8ff47;">AI</span>`:''}</div></div></div><div class="mini-bars">${bars}</div>${checkinHtml}</div>`;
+  }).join('');}
+
+function setFilter(f){currentFilter=f;renderRoster();}
+
+async function showDetail(id){
+  currentPlayer=players.find(p=>p.id===id);
+  currentLogs=await loadLogs(id);
+  currentCheckins=await loadCheckins(id);
+  const p=currentPlayer,prim=getPrimary(p.scores),sec=getSecondary(p.scores),ac=avatarColor(p.name);
+  const av=document.getElementById('d-avatar');av.textContent=initials(p.name);av.style.cssText=`width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;flex-shrink:0;background:${ac}22;color:${ac}`;
+  document.getElementById('d-name').textContent=p.name;
+  document.getElementById('d-meta').textContent=`${p.pos} · Grade ${p.grade} · PIN: ${p.pin||generatePin(p.name)}`;
+  document.getElementById('d-badges').innerHTML=badge(prim)+' '+badge(sec);
+  const de=document.getElementById('d-drift');
+  const total=currentLogs.length+currentCheckins.length;
+  if(p.ai_insight){de.innerHTML=`<span class="drift-indicator drift-high">AI Updated</span>`;}
+  else if(total>=3){de.innerHTML=`<span class="drift-indicator drift-low">${total} data points</span>`;}
+  else{de.innerHTML='';}
+  document.getElementById('d-bars').innerHTML=TYPES.map(t=>`<div class="score-row"><span class="score-lbl">${t}</span><div class="score-track"><div class="score-fill" style="width:${Math.round(p.scores[t]/16*100)}%;background:${TYPE_COLORS[t]};"></div></div><span class="score-val">${p.scores[t]}</span></div>`).join('');
+  drawRadar(p.scores);
+  const ct=COACHING_TEXT[prim];
+  document.getElementById('d-drives').textContent=ct.drives;document.getElementById('d-approach').textContent=ct.approach;document.getElementById('d-avoid').textContent=ct.avoid;document.getElementById('d-accountability').textContent=ct.accountability;
+  currentSituationTag=null;
+  document.querySelectorAll('.sit-tag').forEach(t=>t.classList.remove('selected'));
+  document.getElementById('call-output').innerHTML=`<div class="coaching-call-empty">Select a situation tag above then click Generate.</div>`;
+  document.getElementById('call-btn').disabled=false;
+  document.getElementById('call-btn').innerHTML=`<span id="call-btn-text">Generate</span>`;
+  document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('log-notes').value='';document.getElementById('log-method').value='';document.getElementById('log-situation').value='';
+  logWorked=null;document.getElementById('worked-yes').classList.remove('selected');document.getElementById('worked-no').classList.remove('selected');
+  renderLogEntries();renderCheckinHistory();renderAIOutput();
+  switchTab('profile');showPage('detail');
+}
+
+async function deletePlayer(){
+  if(!currentPlayer)return;
+  if(!confirm(`Delete ${currentPlayer.name}? This cannot be undone.`))return;
+  await db.from('players').delete().eq('id',currentPlayer.id);
+  players=players.filter(p=>p.id!==currentPlayer.id);
+  showToast(`${currentPlayer.name} deleted`);
+  showPage('roster');renderRoster();
+}
+
+function switchTab(tab){
+  const tabs=['profile','checkin','log','history','ai'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+// ── CHECK-IN ──
+async function submitCheckin(){
+  const motivation=parseInt(document.getElementById('ci-motivation').value);
+  const confidence=parseInt(document.getElementById('ci-confidence').value);
+  const focus=parseInt(document.getElementById('ci-focus').value);
+  const energy=parseInt(document.getElementById('ci-energy').value);
+  const stress=parseInt(document.getElementById('ci-stress').value);
+  const frustration=parseInt(document.getElementById('ci-frustration').value);
+  const oneword=document.getElementById('ci-oneword').value.trim();
+  const note=document.getElementById('ci-note').value.trim();
+  const{data,error}=await db.from('checkins').insert({
+    player_id:currentPlayer.id,player_name:currentPlayer.name,
+    motivation_score:motivation,confidence_score:confidence,focus_score:focus,
+    energy_score:energy,stress_score:stress,frustration_score:frustration,
+    one_word_checkin:oneword,player_note:note
+  }).select();
+  if(error){showToast('Error saving check-in');return;}
+  currentCheckins.unshift(data[0]);
+  if(!playerCheckins[currentPlayer.id])playerCheckins[currentPlayer.id]=[];
+  playerCheckins[currentPlayer.id].unshift(data[0]);
+  document.getElementById('ci-oneword').value='';
+  document.getElementById('ci-note').value='';
+  renderCheckinHistory();
+  showToast('Check-in saved!');
+  switchTab('profile');
+}
+
+function renderCheckinHistory(){
+  const cont=document.getElementById('checkin-history-container');
+  if(!currentCheckins.length){cont.innerHTML=`<div class="log-empty">No check-ins yet. Add today\'s check-in in the Check-in tab.</div>`;return;}
+  cont.innerHTML=`<div class="checkin-history">${currentCheckins.map(c=>{
+    const date=new Date(c.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const mot=c.motivation_score||c.mental_score||0;
+    const conf=c.confidence_score||0;
+    const foc=c.focus_score||0;
+    const en=c.energy_score||0;
+    const str=c.stress_score||0;
+    const fru=c.frustration_score||0;
+    return `<div class="checkin-entry">
+      <div class="checkin-entry-header"><span class="log-date-text">${date}</span>${c.one_word_checkin?`<div class="one-word-tag">${c.one_word_checkin}</div>`:''}</div>
+      <div class="checkin-mini-scores">
+        <div class="cms-item"><span class="cms-label">Motivation</span><span class="cms-val ${scoreColor(mot)}">${mot||'—'}</span></div>
+        <div class="cms-item"><span class="cms-label">Confidence</span><span class="cms-val ${scoreColor(conf)}">${conf||'—'}</span></div>
+        <div class="cms-item"><span class="cms-label">Focus</span><span class="cms-val ${scoreColor(foc)}">${foc||'—'}</span></div>
+        <div class="cms-item"><span class="cms-label">Energy</span><span class="cms-val ${scoreColor(en)}">${en||'—'}</span></div>
+        <div class="cms-item"><span class="cms-label">Stress</span><span class="cms-val ${scoreColor(6-str)}">${str||'—'}</span></div>
+        <div class="cms-item"><span class="cms-label">Frustration</span><span class="cms-val ${scoreColor(6-fru)}">${fru||'—'}</span></div>
+      </div>
+      ${c.player_note?`<div class="log-notes-text" style="margin-top:10px;">${c.player_note}</div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── PRACTICE LOG ──
+function setWorked(val){
+  logWorked=val;
+  document.getElementById('worked-yes').classList.toggle('selected',val==='yes');
+  document.getElementById('worked-no').classList.toggle('selected',val==='no');
+}
+
+async function submitLog(){
+  const date=document.getElementById('log-date').value;
+  const situation=document.getElementById('log-situation').value;
+  const method=document.getElementById('log-method').value;
+  const notes=document.getElementById('log-notes').value.trim();
+  if(!date||!situation||!notes){showToast('Please fill in date, situation, and notes');return;}
+  const entry={player_id:currentPlayer.id,date,situation,coaching_method:method,coach_note:notes,worked:logWorked==='yes'};
+  const{data,error}=await db.from('practice_logs').insert(entry).select();
+  if(error){showToast('Error saving log');return;}
+  currentLogs.unshift(data[0]);
+  await db.from('players').update({ai_insight:null}).eq('id',currentPlayer.id);
+  currentPlayer.ai_insight=null;
+  document.getElementById('log-notes').value='';document.getElementById('log-method').value='';document.getElementById('log-situation').value='';
+  logWorked=null;document.getElementById('worked-yes').classList.remove('selected');document.getElementById('worked-no').classList.remove('selected');
+  renderLogEntries();renderAIOutput();showToast('Log saved!');
+}
+
+function renderLogEntries(){
+  const cont=document.getElementById('log-entries-container');
+  if(!currentLogs.length){cont.innerHTML=`<div class="log-empty">No practice logs yet. Logs help the AI give better coaching calls.</div>`;return;}
+  cont.innerHTML=`<div class="log-entries">${currentLogs.map(l=>{
+    const worked=l.worked===true||l.worked==='true';
+    const workedTag=l.worked!==null&&l.worked!==undefined?`<span class="log-tag ${worked?'worked':'didnt'}">${worked?'Worked':'Didn\'t work'}</span>`:'';
+    const methodTag=l.coaching_method||l.method?`<span class="log-tag method">${l.coaching_method||l.method}</span>`:'';
+    return `<div class="log-entry"><div class="log-entry-header"><span class="log-date-text">${l.date||''} · ${l.situation||''}</span></div><div class="log-tags">${methodTag}${workedTag}</div><div class="log-notes-text">${l.coach_note||l.notes||''}</div></div>`;
+  }).join('')}</div>`;
+}
+
+// ── AI INSIGHTS ──
+function renderAIOutput(){
+  const p=currentPlayer,out=document.getElementById('ai-output'),btn=document.getElementById('ai-btn');
+  const total=currentLogs.length+currentCheckins.length;
+  if(p.ai_insight){out.innerHTML=`<div class="ai-content">${p.ai_insight}</div>`;btn.innerHTML=`<span>Re-analyze Season</span>`;btn.disabled=false;}
+  else if(!total){out.innerHTML=`<div class="ai-empty">Add practice logs and check-ins to unlock the season AI insight.</div>`;btn.disabled=true;btn.innerHTML=`<span>Need data first</span>`;}
+  else{out.innerHTML=`<div class="ai-empty">${total} data point${total!==1?'s':''} ready. Click to analyze the full season.</div>`;btn.disabled=false;btn.innerHTML=`<span>Analyze All Data</span>`;}}
+
+async function runAIAnalysis(){
+  const p=currentPlayer;const total=currentLogs.length+currentCheckins.length;if(!total)return;
+  const btn=document.getElementById('ai-btn');btn.disabled=true;btn.innerHTML=`<span class="spinner-dark"></span> Analyzing season...`;
+  const prim=getPrimary(p.scores),sec=getSecondary(p.scores);
+  const logSummary=currentLogs.map((l,i)=>`${i+1}. ${l.date}: ${l.situation||''} → ${l.coaching_method||l.method||'?'} → ${l.worked?'worked':'didn\'t work'}. ${l.coach_note||l.notes||''}`).join('\n');
+  const checkinSummary=currentCheckins.slice(0,10).map(c=>`${new Date(c.created_at).toLocaleDateString()}: Mot=${c.motivation_score||'?'} Conf=${c.confidence_score||'?'} Foc=${c.focus_score||'?'} Frus=${c.frustration_score||'?'} Word="${c.one_word_checkin||''}"`).join('\n');
+  const prompt=`You are a football coaching psychologist. Analyze this player's full season data and give the coach a comprehensive insight report.
+
+PLAYER: ${p.name} | ${p.pos} | Grade ${p.grade}
+PRIMARY: ${prim} | SECONDARY: ${sec}
+
+PRACTICE LOGS:\n${logSummary||'None'}
+
+CHECK-IN HISTORY:\n${checkinSummary||'None'}
+
+Write a coaching insight report using this HTML structure. Be specific to the actual data. 2-3 sentences max per section:
+<div class="ai-section"><div class="ai-section-label">Season patterns</div><p class="ci-text">[what trends appear across check-ins and logs]</p></div>
+<div class="ai-section"><div class="ai-section-label">Profile drift</div><p class="ci-text">[is observed behavior matching or diverging from their original motivation type]</p></div>
+<div class="ai-section"><div class="ai-section-label">What's working</div><p class="ci-text">[coaching methods that have gotten positive responses]</p></div>
+<div class="ai-section"><div class="ai-section-label">Updated coaching approach</div><p class="ci-text">[specific adjusted recommendation based on the season data]</p></div>
+<div class="ai-section"><div class="ai-section-label">Watch for</div><p class="ci-text">[one risk or pattern to monitor going forward]</p></div>`;
+  try{
+    const response=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})});
+    const data=await response.json();const text=data.content.map(c=>c.text||'').join('');
+    await db.from('players').update({ai_insight:text}).eq('id',p.id);
+    currentPlayer.ai_insight=text;players=players.map(pl=>pl.id===p.id?{...pl,ai_insight:text}:pl);
+    renderAIOutput();showToast('Season analysis complete');
+  }catch(err){
+    document.getElementById('ai-output').innerHTML=`<div class="ai-empty" style="color:var(--red);">Analysis failed.</div>`;
+    btn.disabled=false;btn.innerHTML=`<span>Try Again</span>`;
+  }
+}
+
+// ── RADAR ──
+function drawRadar(scores){
+  const svg=document.getElementById('d-radar');svg.innerHTML='';
+  const cx=110,cy=115,r=80,n=TYPES.length,angles=TYPES.map((_,i)=>(i/n)*2*Math.PI-Math.PI/2),gc='rgba(255,255,255,0.08)';
+  [0.25,0.5,0.75,1].forEach(frac=>{const pts=angles.map(a=>`${cx+r*frac*Math.cos(a)},${cy+r*frac*Math.sin(a)}`).join(' ');const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');poly.setAttribute('points',pts);poly.setAttribute('fill','none');poly.setAttribute('stroke',gc);poly.setAttribute('stroke-width','1');svg.appendChild(poly);});
+  angles.forEach(a=>{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',cx);l.setAttribute('y1',cy);l.setAttribute('x2',cx+r*Math.cos(a));l.setAttribute('y2',cy+r*Math.sin(a));l.setAttribute('stroke',gc);l.setAttribute('stroke-width','1');svg.appendChild(l);});
+  const dataPts=angles.map((a,i)=>`${cx+r*(scores[TYPES[i]]/16)*Math.cos(a)},${cy+r*(scores[TYPES[i]]/16)*Math.sin(a)}`).join(' ');
+  const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');poly.setAttribute('points',dataPts);poly.setAttribute('fill','rgba(232,255,71,0.12)');poly.setAttribute('stroke','#e8ff47');poly.setAttribute('stroke-width','2');svg.appendChild(poly);
+  angles.forEach((a,i)=>{const frac=scores[TYPES[i]]/16,dot=document.createElementNS('http://www.w3.org/2000/svg','circle');dot.setAttribute('cx',cx+r*frac*Math.cos(a));dot.setAttribute('cy',cy+r*frac*Math.sin(a));dot.setAttribute('r','4');dot.setAttribute('fill',TYPE_COLORS[TYPES[i]]);svg.appendChild(dot);const txt=document.createElementNS('http://www.w3.org/2000/svg','text');txt.setAttribute('x',cx+(r+18)*Math.cos(a));txt.setAttribute('y',cy+(r+18)*Math.sin(a)+4);txt.setAttribute('text-anchor',Math.cos(a)<-0.1?'end':Math.cos(a)>0.1?'start':'middle');txt.setAttribute('font-size','11');txt.setAttribute('fill','#7a8099');txt.setAttribute('font-family','Barlow, sans-serif');txt.textContent=TYPES[i].split('-')[0];svg.appendChild(txt);});
+}
+
+// ── FORM WIZARD ──
+function startForm(){currentStep=0;formAnswers={};buildFormSteps();showPage('add');renderStep();}
+function buildFormSteps(){document.getElementById('form-steps').innerHTML=STEPS.map((_,i)=>`<div class="form-step${i===0?' active':''}" id="step-${i}"></div>`).join('');}
+function renderStep(){
+  const s=STEPS[currentStep],total=STEPS.length;
+  document.getElementById('progress-fill').style.width=Math.round((currentStep/total)*100)+'%';
+  document.getElementById('progress-text').textContent=`Step ${currentStep+1} of ${total} · ${s.section}`;
+  document.querySelectorAll('.form-step').forEach((el,i)=>el.classList.toggle('active',i===currentStep));
+  const el=document.getElementById(`step-${currentStep}`),val=formAnswers[s.id]||'';
+  let inner=`<div class="step-header"><div class="step-label">${s.section}</div><div class="step-question">${s.question}</div></div>`;
+  if(s.type==='text'){inner+=`<input class="form-input" id="step-input" type="text" placeholder="${s.placeholder||''}" value="${val}" oninput="formAnswers['${s.id}']=this.value">`;inner+=`<div class="form-nav"><button class="btn-next" onclick="nextStep()">Continue →</button>${currentStep>0?`<button class="btn-back-step" onclick="prevStep()">← Back</button>`:''}</div>`;}
+  else if(s.type==='select'){inner+=`<select class="form-select" id="step-input" onchange="formAnswers['${s.id}']=this.value;nextStep()"><option value="">Select...</option>${s.opts.map(o=>`<option${val===o?' selected':''}>${o}</option>`).join('')}</select>`;inner+=`<div class="form-nav">${currentStep>0?`<button class="btn-back-step" onclick="prevStep()">← Back</button>`:''}</div>`;}
+  else if(s.type==='radio'){inner+=`<div class="radio-group">${s.opts.map(o=>`<div class="radio-opt${val===o?' selected':''}" onclick="selectOpt('${s.id}','${o.replace(/'/g,"\\'")}',this)"><div class="radio-dot"><div class="radio-dot-inner"></div></div>${o}</div>`).join('')}</div>`;inner+=`<div class="form-nav"><button class="btn-next" onclick="nextStep()">Continue →</button>${currentStep>0?`<button class="btn-back-step" onclick="prevStep()">← Back</button>`:''}</div>`;}
+  el.innerHTML=inner;
+  if(s.type==='text'){setTimeout(()=>{const inp=document.getElementById('step-input');if(inp)inp.focus();},50);}
+}
+function selectOpt(qid,val,el){document.querySelectorAll(`#step-${currentStep} .radio-opt`).forEach(o=>o.classList.remove('selected'));el.classList.add('selected');formAnswers[qid]=val;setTimeout(()=>nextStep(),280);}
+function nextStep(){const s=STEPS[currentStep];if(!formAnswers[s.id]){showToast('Please select an answer');return;}if(s.id==='name'&&!formAnswers.name.trim()){showToast('Please enter a name');return;}if(currentStep<STEPS.length-1){currentStep++;renderStep();window.scrollTo(0,0);}else{submitForm();}}
+function prevStep(){if(currentStep>0){currentStep--;renderStep();window.scrollTo(0,0);}}
+async function submitForm(){
+  const name=(formAnswers.name||'').trim(),pos=formAnswers.pos||'',grade=parseInt(formAnswers.grade||'0');
+  if(!name||!pos||!grade){showToast('Missing player info');return;}
+  const scores={Competitor:0,Relational:0,'Status-Driven':0,'Future-Driven':0,'Confidence-Based':0};
+  STEPS.filter(s=>s.type==='radio'&&s.scoring!==false&&SCORING[s.id]).forEach(s=>{const ans=formAnswers[s.id];if(ans&&SCORING[s.id][ans])SCORING[s.id][ans].forEach((pts,i)=>scores[TYPES[i]]+=pts);});
+  const{data,error}=await db.from('players').insert({name,pos,grade,scores,ai_insight:null}).select();
+  if(error){showToast('Error saving player');return;}
+  players.push(data[0]);showToast(`${name} added!`);setTimeout(()=>showDetail(data[0].id),500);
+}
+
+// ── ATHLETE VIEW ──
+function showAthleteView(user){
+  const matched=players.find(p=>p.user_id===user.id||p.email===user.email);
+  if(matched){renderAthleteProfile(matched);}
+  else{
+    document.getElementById('athlete-content').innerHTML=`<div style="text-align:center;padding:60px 20px;"><div style="font-family:var(--font-display);font-size:24px;font-weight:700;margin-bottom:12px;">Welcome to CoachIQ</div><div style="font-size:14px;color:var(--muted);margin-bottom:24px;">Your profile hasn't been linked yet. Ask your coach to connect your account.</div><div style="font-size:13px;color:var(--muted);">Logged in as: ${user.email}</div></div>`;
+    showPage('athlete');
+  }
+}
+
+let athleteSelections={motivation:0,confidence:0,focus:0,energy:0,stress:0,frustration:0};
+
+function renderAthleteProfile(player){
+  currentAthletePlayer=player;
+  athleteSelections={motivation:0,confidence:0,focus:0,energy:0,stress:0,frustration:0};
+  const prim=getPrimary(player.scores),sec=getSecondary(player.scores),ac=avatarColor(player.name);
+  document.getElementById('athlete-content').innerHTML=`
+    <div class="athlete-header">
+      <div class="athlete-big-avatar" style="background:${ac}22;color:${ac}">${initials(player.name)}</div>
+      <div class="athlete-name-big">${player.name}</div>
+      <div style="margin-top:8px;">${badge(prim)} ${badge(sec)}</div>
+    </div>
+    <div class="athlete-card">
+      <div class="athlete-card-title">Your motivation type</div>
+      <div class="athlete-type-big" style="color:${TYPE_COLORS[prim]}">${prim}</div>
+      <div class="athlete-desc">${TYPE_PLAYER_DESC[prim]}</div>
+    </div>
+    <div class="athlete-card">
+      <div class="athlete-card-title">What drives you</div>
+      <div class="athlete-desc">${COACHING_TEXT[prim].drives}</div>
+    </div>
+    <div class="athlete-checkin-card">
+      <div class="athlete-checkin-title">Today's Check-in</div>
+      ${['motivation','confidence','focus','energy','stress','frustration'].map(k=>`
+        <div class="scale-row">
+          <div class="scale-row-label">${k.charAt(0).toUpperCase()+k.slice(1)} <span id="a-val-${k}">—</span>/5</div>
+          <div class="scale-btns">${[1,2,3,4,5].map(n=>`<div class="scale-btn" onclick="setAthleteScore('${k}',${n},this)">${n}</div>`).join('')}</div>
+        </div>`).join('')}
+      <input class="athlete-notes-input" type="text" id="a-oneword" placeholder="One word — how are you showing up today?">
+      <textarea class="athlete-notes-input" id="a-note" placeholder="Anything on your mind? (optional)" style="margin-top:8px;min-height:60px;"></textarea>
+      <button class="athlete-submit-btn" onclick="submitAthleteCheckin('${player.id}','${player.name}')">Submit Check-in</button>
+    </div>`;
+  showPage('athlete');
+}
+
+function setAthleteScore(type,val,el){
+  athleteSelections[type]=val;
+  document.getElementById(`a-val-${type}`).textContent=val;
+  el.closest('.scale-btns').querySelectorAll('.scale-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitAthleteCheckin(playerId,playerName){
+  const s=athleteSelections;
+  if(!s.motivation||!s.confidence||!s.focus){showToast('Please rate at least Motivation, Confidence, and Focus');return;}
+  const oneword=document.getElementById('a-oneword').value.trim();
+  const note=document.getElementById('a-note').value.trim();
+  const{error}=await db.from('checkins').insert({
+    player_id:playerId,player_name:playerName,
+    motivation_score:s.motivation,confidence_score:s.confidence,focus_score:s.focus,
+    energy_score:s.energy||null,stress_score:s.stress||null,frustration_score:s.frustration||null,
+    one_word_checkin:oneword,player_note:note,user_id:currentUser.id
+  });
+  if(error){showToast('Error saving check-in');return;}
+  showToast('Check-in submitted!');
+  setTimeout(()=>renderAthleteProfile(currentAthletePlayer),1200);
+}
+
+// ── UTILS ──
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  if(page==='roster'){renderRoster();const nb=document.querySelector('.nav-btn');if(nb)nb.classList.add('active');}
+  window.scrollTo(0,0);
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// ── INIT ──
+db.auth.getSession().then(async({data:{session}})=>{
+  await loadPlayers();
+  if(session){onAuthSuccess(session.user);}
+});
+db.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_IN'&&session)onAuthSuccess(session.user);if(event==='SIGNED_OUT')handleLogout();});
+</script>
+</body>
+</html>
